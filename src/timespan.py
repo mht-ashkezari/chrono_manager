@@ -1,14 +1,14 @@
 from __future__ import annotations
-from constants import (
+from .constants import (
     EdgeType,
     SpanContain,
     SpanType,
 )
-from timepoint import TimePoint, TimePointNotComparableError, TimePointOccurrenceError
+from .timepoint import TimePoint, TimePointNotComparableError, TimePointOccurrenceError
 
 from typing import Dict, List, Optional
 
-from utilityfuncs import find_intersection
+from .utilityfuncs import find_intersection
 
 
 class TimeSpanError(Exception):

@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from constants import (
+
+from .configs import (
     START_YEAR,
     END_YEAR,
     YEARS_WITH_53_WEEKS,
-    PointType,
     START_SCOPE_ELEMENTS_GRE,
     START_SCOPE_ELEMENTS_ISO,
     END_SCOPE_ELEMENTS_GRE,
     END_SCOPE_ELEMENTS_ISO,
+    PointType,
 )
-from utilityfuncs import (
+from .utilityfuncs import (
     get_value_by_unit_from_elements,
     leap_years_between,
     sort_elements_by_sequence,
@@ -25,7 +26,7 @@ from utilityfuncs import (
     units_vlaues_to_ordered_elements,
     get_elements_sequence,
 )
-from timeelement import TimeElement
+from .timeelement import TimeElement
 
 from typing import Dict, List, Tuple, Union, Optional
 
@@ -132,7 +133,7 @@ class TimePoint:
                     1
                 ]
                 self._weekday = get_value_by_unit_from_elements(
-                    "WD", self._time_elements
+                    "WY", self._time_elements
                 )[0]
                 self._day = get_value_by_unit_from_elements("DY", self._time_elements)[
                     0
@@ -141,10 +142,10 @@ class TimePoint:
                     0
                 ]
                 self._minute = get_value_by_unit_from_elements(
-                    "MN", self._time_elements
+                    "ME", self._time_elements
                 )[0]
                 self._second = get_value_by_unit_from_elements(
-                    "SC", self._time_elements
+                    "SD", self._time_elements
                 )[0]
 
     def __str__(self) -> str:
@@ -374,7 +375,7 @@ class TimePoint:
                 if is_first:
                     current_range = TimeElement.unit_values_to_end_scope(
                         "DY", starts[dim], month
-                    )[starts[dim] - 1:]
+                    )[starts[dim] - 1 :]
                 elif is_last:
                     current_range = TimeElement.unit_values_to_end_scope("DY", 1, month)
                 else:
@@ -385,7 +386,8 @@ class TimePoint:
                 if is_first:
                     current_range = list(
                         TimeElement.unit_values_to_end_scope("MH", 1, None)[
-                            starts[dim] - 1:]
+                            starts[dim] - 1 :
+                        ]
                     )
                 elif is_last:
                     current_range = TimeElement.unit_values_to_end_scope("MH", 1, None)
@@ -559,7 +561,7 @@ class TimePoint:
     def available_years(self) -> Optional[list[int]]:
         available_years = None
         if self._is_iso and self._week == 53:
-            available_years = List(YEARS_WITH_53_WEEKS)
+            available_years = list(YEARS_WITH_53_WEEKS)
         elif self._is_leap:
             available_years = leap_years_between(START_YEAR, END_YEAR)
         return available_years
@@ -570,7 +572,7 @@ class TimePoint:
         filled: List[Union[str, int]] = []
         filled.extend(self._over_units)
         filled.extend([el.element_value for el in self._time_elements])
-        filled.extend(start_array[len(filled):])
+        filled.extend(start_array[len(filled) :])
         return filled
 
     @property
@@ -582,7 +584,7 @@ class TimePoint:
         filled: List[Union[str, int]] = []
         filled.extend(self._over_units)
         filled.extend([el.element_value for el in self._time_elements])
-        filled.extend(end_array[len(filled):])
+        filled.extend(end_array[len(filled) :])
         return filled
 
     @property
@@ -645,6 +647,7 @@ class TimePoint:
     def week(self) -> Optional[int]:
         return self._week
 
+    @property
     def day(self) -> Optional[int]:
         return self._day
 

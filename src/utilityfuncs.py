@@ -3,14 +3,9 @@ from __future__ import annotations
 from typing import Optional, Tuple, List, Union, Dict
 from datetime import datetime, timedelta
 import calendar
-from timeelement import TimeElement
-from constants import (
-    END_YEAR,
-    START_YEAR,
-    YEARS_WITH_53_WEEKS,
-    CompareSequnce,
-    units_sequence,
-)
+from .timeelement import TimeElement
+from .units_constants import START_YEAR, END_YEAR, units_sequence
+from .configs import YEARS_WITH_53_WEEKS, CompareSequnce
 
 
 def days_to_year_start_iso(
@@ -972,7 +967,7 @@ def find_ordered_elements_over_under_units(
         elements_end_index = sequence.index(elements[-1].element_unit)
         over_units = sequence[:elements_start_index]
         under_units = sequence[elements_end_index + 1:]
-        over_and_under = {"O": List(over_units), "U": List(under_units)}
+        over_and_under = {"O": list(over_units), "U": list(under_units)}
         return over_and_under
 
 
@@ -1259,7 +1254,7 @@ def compare_two_ordered_comparable_elements(
             else:
                 set_years = [2023]
         elif compare_type == CompareSequnce.ISO:
-            set_years = List(iso_available_years) if iso_available_years else [2023]
+            set_years = list(iso_available_years) if iso_available_years else [2023]
         elif compare_type == CompareSequnce.ISO_GRE:
             if is_iso_elements1 and not is_iso_elements2:
                 if is_iso_greg_compare_consistent(
@@ -1267,13 +1262,13 @@ def compare_two_ordered_comparable_elements(
                     2023, complete_elements2[1], complete_elements2[2]  # type: ignore
                 ):
                     set_years = (
-                        List(iso_available_years)
+                        list(iso_available_years)
                         if iso_available_years else [2023]
                     )
                 else:
                     temp_years = (
-                        List(iso_available_years) if iso_available_years
-                        else List(range(START_YEAR, END_YEAR + 1))
+                        list(iso_available_years) if iso_available_years
+                        else list(range(START_YEAR, END_YEAR + 1))
                     )
             elif not is_iso_elements1 and is_iso_elements2:
                 if is_iso_greg_compare_consistent(
@@ -1283,8 +1278,8 @@ def compare_two_ordered_comparable_elements(
                     set_years = [2023]
                 else:
                     set_years = (
-                        List(iso_available_years) if iso_available_years
-                        else List(range(START_YEAR, END_YEAR + 1))
+                        list(iso_available_years) if iso_available_years
+                        else list(range(START_YEAR, END_YEAR + 1))
                     )
         set_years = [
             y for y in temp_years

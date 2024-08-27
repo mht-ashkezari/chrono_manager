@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 from typing import Callable, Dict, List, Optional, Tuple, Union, cast
-from constants import UNITS, TimeUnitInfo
+from .units_constants import UNITS, TimeUnitInfo
 
 
 class TimeElement:
@@ -59,15 +59,15 @@ class TimeElement:
 
             else:
                 self._element_unit = unit_name_or_string
-                if self._validate_value(unit_name_or_string, value):
-                    self._element_value = value
-                else:
-                    # fmt: off
+                try:
+                    self._validate_value(unit_name_or_string, value)
+                except ValueError as ve:
                     raise ValueError(
-                        f"Invalid value for unit "
-                        f"{unit_name_or_string}: {value}"
-                    )
-                    # fmt: on
+                        f"{method_name}: Error validating value '{value}' "
+                        f" for unit'{unit_name_or_string}'"
+                    ) from ve
+                else:
+                    self._element_value = value
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, TimeElement):
@@ -211,10 +211,15 @@ class TimeElement:
             ValueError: If the value is not valid for the element unit.
         """
         # fmt: off
-        if not self._validate_value(self._element_unit, value):
+        try:
+            self._validate_value(self._element_unit, value)
+        except ValueError as ve:
             raise ValueError(
-                f"Invalid value for unit {self._element_unit}: {value}")
-        self._element_value = value
+                f"Error validating value '{value}'" 
+                f"for unit '{self._element_unit}'"
+            ) from ve
+        else:
+            self._element_value = value
 
     @classmethod
     def unit_values_to_end_scope(
@@ -249,7 +254,7 @@ class TimeElement:
             unit_name: str, month: Union[str, int, None] = None) -> int:
         # fmt: on
         method_name = TimeElement.get_max_value.__name__
-        unit_info = TimeUnitInfo(TimeElement._units.get(unit_name, {}))
+        unit_info = TimeElement._units.get(unit_name, {})
         unit_allowed_values = cast(Dict[str, int], unit_info.get("allowed_values", {}))
         if not unit_info:
             raise ValueError(f"{method_name}: Invalid unit name '{unit_name}'")
@@ -257,10 +262,10 @@ class TimeElement:
             if month:
                 if isinstance(month, int):
                     month_names = unit_allowed_values.keys()
-                    month = cast(str , List(month_names)[month - 1])
-                month_info = cast(Dict[str , int] , unit_allowed_values.get(month))
+                    month = cast(str, list(month_names)[month - 1])
+                month_info = cast(Dict[str, int], unit_allowed_values.get(month))
                 if month_info:
-                    return cast(int , month_info["max"])
+                    return cast(int, month_info["max"])
                 else:
                     # fmt: off
                     raise ValueError(
@@ -268,13 +273,13 @@ class TimeElement:
                     # fmt: on
             else:
                 return 31
-        elif unit_info and cast(str , unit_info["value_type"]) == "range":
-            return cast(int , unit_allowed_values["max"])
+        elif unit_info and cast(str, unit_info["value_type"]) == "range":
+            return cast(int, unit_allowed_values["max"])
         elif unit_info and unit_info["value_type"] == "list":
             return max(
                 cast(
                     List[int],
-                    cast(Dict[str , int], unit_allowed_values).values()
+                    cast(Dict[str, int], unit_allowed_values).values()
                 )
             )
         # If none of the conditions are met, raise an error
@@ -285,15 +290,15 @@ class TimeElement:
         method_name = TimeElement.get_min_value.__name__
         unit_info = TimeElement._units.get(unit_name, {})
         unit_allowed_values = cast(
-            Dict[str , int] ,
+            Dict[str, int],
             unit_info.get("allowed_values", {})
         )
         if not unit_info:
             raise ValueError(f"{method_name}: Invalid unit name '{unit_name}'")
         elif unit_info and unit_info["value_type"] == "range":
-            return cast(int , unit_allowed_values["min"])
+            return cast(int, unit_allowed_values["min"])
         elif unit_info and unit_info["value_type"] == "list":
-            return min(cast(List[int] , unit_allowed_values.values()))
+            return min(cast(List[int], unit_allowed_values.values()))
         # If none of the conditions are met, raise an error
         raise ValueError(f"Cannot determine min value for unit '{unit_name}'")
 
@@ -316,7 +321,7 @@ class TimeElement:
         method_name = TimeElement._validate_value.__name__
         unit_info = TimeElement._units[unit_name]
         unit_allowed_values = cast(
-            Dict[str , int] ,
+            Dict[str, int],
             unit_info.get("allowed_values", {})
         )
         if unit_info["value_type"] == "range":
@@ -324,8 +329,8 @@ class TimeElement:
                 min_val, max_val = 1, 31
             else:
                 min_val, max_val = (
-                    unit_allowed_values["min"] ,
-                    unit_allowed_values["max"] ,
+                    unit_allowed_values["min"],
+                    unit_allowed_values["max"],
                 )
 
             if not (min_val <= value <= max_val):
@@ -390,13 +395,13 @@ class TimeElement:
         while remaining_string:
             match_found = False
             for unit_key, unit_info in TimeElement._units.items():
-                unit_alt_pattern = cast(str , unit_info["alternative_pattern"])
+                unit_alt_pattern = cast(str, unit_info["alternative_pattern"])
                 # Try to match with default pattern
                 # fmt: off
                 default_match = re.match(
                     unit_alt_pattern, remaining_string)
                 alternative_match = re.match(
-                    unit_alt_pattern , remaining_string
+                    unit_alt_pattern, remaining_string
                 )
                 # fmt: on
                 if default_match or alternative_match:
@@ -423,10 +428,10 @@ class TimeElement:
                     elif unit_info["value_type"] == "list":
                         value_str = matched_string
                         allowed_values = cast(
-                            Dict[str , int] ,
+                            Dict[str, int],
                             unit_info["allowed_values"]
                         )
-                        value = cast(int , allowed_values.get(value_str))
+                        value = cast(int, allowed_values.get(value_str))
 
                         if value is None:
                             digit_match = re.search(r"\d+", value_str)
@@ -440,17 +445,25 @@ class TimeElement:
                                 )
                                 # fmt: on
                     # Validate and create TimeElement object
-                    if value is not None and TimeElement._validate_value(
-                        unit_key, value
-                    ):
-                        matched_elements.append(TimeElement(unit_key, value))
+                    try:
+                        is_valid = TimeElement._validate_value(unit_key, value)
+                    except ValueError as ve:
                         # fmt: off
-                        matched_substrings.append(matched_string)
-                        remaining_string = (
-                            remaining_string[len(matched_string):])
+                        raise ValueError(
+                            f"Error validating value '{value}' for"
+                            f" unit '{unit_key}'"
+                        ) from ve
                         # fmt: on
-                        match_found = True
-                        break
+                    else:
+                        if value is not None and is_valid:
+                            matched_elements.append(TimeElement(unit_key, value))
+                            # fmt: off
+                            matched_substrings.append(matched_string)
+                            remaining_string = (
+                                remaining_string[len(matched_string):])
+                            # fmt: on
+                            match_found = True
+                            break
 
             if not match_found:
                 # No match found for the beginning of the string,
