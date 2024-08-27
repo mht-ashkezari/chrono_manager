@@ -280,3 +280,14 @@ class TimeSpan:
             raise TimeSpanOccurrenceError(e) from e
         else:
             return temp_dict
+
+    @staticmethod
+    def is_contained_in_span(
+        contained_span: TimeSpan, container_span: TimeSpan
+    ) -> Optional[SpanContain]:
+        try:
+            return TimeSpan.is_contained_in_preiod(
+                contained_span, container_span.start, container_span.end
+            )
+        except TimeSpanOccurrenceError as e:
+            raise TimeSpanOccurrenceError(e) from e
