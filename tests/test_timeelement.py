@@ -125,7 +125,7 @@ def test_over_join_units_property():
 def test_under_join_units_property():
     time_element = TimeElement("YR", 2024)
     # Assuming that under_join_units returns a list like []
-    expected_units = []  # Replace with actual expected units
+    expected_units = ["WK", "MH"]  # Replace with actual expected units
     assert time_element.under_join_units == expected_units
 
 

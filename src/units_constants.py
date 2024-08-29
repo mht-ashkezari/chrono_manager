@@ -1,11 +1,11 @@
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union, cast
 from frozendict import frozendict
 import datetime
 
 START_YEAR = 1800
 END_YEAR = 2199
 
-units_sequence: Dict[str, Tuple[str, ...]] = {
+UNITS_SEQUENCE: Dict[str, Tuple[str, ...]] = {
     "gre": ("YR", "MH", "DY", "HR", "ME", "SD"),
     "iso": ("YR", "WK", "WY", "HR", "ME", "SD"),
 }
@@ -126,9 +126,9 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "unit_name": "hour",
         "value_type": "range",
         "allowed_values": {"min": 0, "max": 23},
-        "default_pattern": r"(T[01]\d|T2[0-3]|-[01]\d|-2[0-3])",
+        "default_pattern": r"(T[01]\d|T2[0-3])",
         "alternative_pattern": r"(H[01]\d|H2[0-3])",
-        "default_representation": lambda value: f"-{value:02d}",
+        "default_representation": lambda value: f"T{value:02d}",
         "alternative_representation": lambda value: f"H{value:02d}",
         "over_join_units": ["DY", "WY"],
         "under_join_units": ["ME"],
@@ -149,8 +149,12 @@ UNITS: Dict[str, TimeUnitInfo] = {
         },
         "default_pattern": r"-(1|2|3|4|5|6|7)",
         "alternative_pattern": r"(MO|TU|WE|TH|FR|SA|SU)",
-        "default_representation": lambda value: f"{value}",
-        "alternative_representation": lambda value: f"{value}",
+        "default_representation": lambda value: f"-{value}",
+        "alternative_representation": lambda value: next(
+            key
+            for key, val in cast(Dict[str, int], UNITS["WY"]["allowed_values"]).items()
+            if val == value
+        ),
         "over_join_units": ["WK"],
         "under_join_units": ["HR"],
         "unit_as_seconds": 86400,
@@ -162,7 +166,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "allowed_values": {"min": 1, "max": 53},
         "default_pattern": r"(-W[0-4]\d|-W5[0-3])",
         "alternative_pattern": r"(W[0-4]\d|W5[0-3])",
-        "default_representation": lambda value: f"W{value:02d}",
+        "default_representation": lambda value: f"-W{value:02d}",
         "alternative_representation": lambda value: f"W{value:02d}",
         "over_join_units": ["YR"],
         "under_join_units": ["WY"],

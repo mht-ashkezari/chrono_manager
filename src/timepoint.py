@@ -98,16 +98,13 @@ class TimePoint:
             raise TimePointArgumentError("argument has no valid elements")
         else:
             try:
-                filtered_elements = [
-                    el for el in sorted_elements if isinstance(el, TimeElement)
-                ]
-                is_ordered_elements(filtered_elements)
+                is_ordered_elements(sorted_elements)
             except ValueError as e:
                 raise TimePointCreationError(
                     f"Error in creating TimePoint instance: {e}"
                 )
             else:
-                self._time_elements = filtered_elements
+                self._time_elements = sorted_elements
                 self._is_iso = (
                     True if what_is_sequence(self._time_elements) == "iso" else False
                 )

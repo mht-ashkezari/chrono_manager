@@ -136,7 +136,7 @@ class TimeElement:
         Returns:
             List[str]: A list of unit names.
         """
-        return cast(List[str], self._units[self._element_unit]["over_join_units"])
+        return cast(List[str], self._units[self._element_unit]["under_join_units"])
 
     @property
     def element_unit(self) -> str:

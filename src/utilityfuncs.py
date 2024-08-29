@@ -4,7 +4,7 @@ from typing import Optional, Tuple, List, Union, Dict
 from datetime import datetime, timedelta
 import calendar
 from .timeelement import TimeElement
-from .units_constants import START_YEAR, END_YEAR, units_sequence
+from .units_constants import START_YEAR, END_YEAR, UNITS_SEQUENCE
 from .configs import YEARS_WITH_53_WEEKS, CompareSequnce
 
 
@@ -21,7 +21,7 @@ def days_to_year_start_iso(
         iso_year, 1, 4
     )  # January 4th is always in the first week of the ISO year
     iso_year_start = jan_4 - timedelta(
-        days=jan_4.isoweekday() - 1
+        days=jan_4.isoweekday()
     )  # Find the Monday of that week
 
     # Calculate difference from the actual ISO year start
@@ -51,7 +51,6 @@ def is_iso_greg_compare_consistent(
     iso_days = days_to_year_start_iso(iso_year, iso_week, iso_weekday)
     gregorian_days = days_to_year_start_gregorian(year, month, day)
     difference = abs(iso_days - gregorian_days)
-
     if difference > treshold:
         # Consistent comparison across alll years
         return True
@@ -281,7 +280,7 @@ def get_elements_sequence(elements: List[TimeElement]) -> Optional[Tuple[str, ..
         A tuple representing the sequence of units if all elements have their
         units in the same sequence, or None if no match is found.
     """
-    for key, value_tuple in units_sequence.items():
+    for key, value_tuple in UNITS_SEQUENCE.items():
         if all(element.element_unit in value_tuple for element in elements):
             return value_tuple
 
@@ -381,7 +380,7 @@ def add_element_to_ordered_elements(
     try:
         is_ordered_elements(elements)
     except ValueError as e:
-        raise ValueError(f"{func_name}:argument elements:{e}")
+        raise ValueError(f"{func_name}:argument elements") from e
     else:
         if element_added.element_unit in [el.element_unit for el in elements]:
             raise ValueError(
@@ -395,68 +394,13 @@ def add_element_to_ordered_elements(
             else:
                 raise ValueError(
                     f"{func_name}: The element unit {element_added.element_unit}"
-                    f" is not above or below unit of the existing elements"
+                    f" is not over or under unit of the existing elements"
                 )
             try:
                 is_ordered_elements(result_elements)
             except ValueError as e:
                 raise ValueError(f"{func_name}:result elements:{e}")
         return result_elements
-
-
-def remove_element_from_ordered_elements(
-    element_remove: TimeElement, elements: List[TimeElement]
-) -> List[TimeElement]:
-    """
-    Remove an element from a list of ordered elements.
-
-    Args:
-        element_remove (TimeElement): The element to be removed.
-        elements (List[TimeElement]): The list of ordered elements.
-
-    Returns:
-        List[TimeElement]: The updated list of ordered elements after removing
-                            the specified element.
-
-    Raises:
-        ValueError: If the elements are not ordered.
-        ValueError: If the specified element is not present in the elements.
-        ValueError: If the specified element is not the first or last element
-                    in the elements.
-        ValueError: If the resulting elelments is empty.
-        ValueError: If the resulting elements are not ordered.
-    """
-
-    func_name = remove_element_from_ordered_elements.__name__
-    result_elements = []
-    try:
-        is_ordered_elements(elements)
-    except ValueError as e:
-        raise ValueError(f"{func_name}:arguments elements:{e}")
-    else:
-        if element_remove not in elements:
-            raise ValueError(
-                f"{func_name}: The element must be"
-                f" removed {element_remove} is not in the elements"
-            )
-        if element_remove == elements[0] or element_remove == elements[-1]:
-            elements.remove(element_remove)
-            result_elements = elements
-        else:
-            raise ValueError(
-                f"{func_name}: The element unit {element_remove} must be"
-                f" first ot last unit in the elements"
-            )
-        if not result_elements:
-            raise ValueError(
-                f"{func_name}: The result list must have at least one element"
-            )
-        try:
-            is_ordered_elements(result_elements)
-        except ValueError as e:
-            raise ValueError(f"{func_name}:result elements:{e}")
-        else:
-            return result_elements
 
 
 def remove_unit_from_ordered_elements(
@@ -539,34 +483,27 @@ def update_element_in_ordered_elements(
     try:
         is_ordered_elements(elements)
     except ValueError as e:
-        raise ValueError(f"{func_name}:argument elements:{e}")
+        raise ValueError(f"{func_name}:argument elements:") from e
     else:
 
         updated_elements = elements.copy()
-        if element_updated not in elements:
-            # fmt : off
+        index = (
+            get_unit_index_in_elements(
+                element_updated.element_unit, elements)
+        )
+        if index is None:
             raise ValueError(
-                f"{func_name}: The element {element_updated} is not "
-                "in the elements"
+                f"{func_name}: The element unit "
+                f"{element_updated.element_unit} is not in the elements"
             )
+        # fmt : on
+        updated_elements[index] = element_updated
+        try:
+            is_ordered_elements(updated_elements)
+        except ValueError as e:
+            raise ValueError(f"{func_name}:updated elements:{e}")
         else:
-            index = (
-                get_unit_index_in_elements(
-                    element_updated.element_unit, elements)
-            )
-            if index is None:
-                raise ValueError(
-                    f"{func_name}: The element unit "
-                    f"{element_updated.element_unit} is not in the elements"
-                )
-            # fmt : on
-            updated_elements[index] = element_updated
-            try:
-                is_ordered_elements(updated_elements)
-            except ValueError as e:
-                raise ValueError(f"{func_name}:updated elements:{e}")
-            else:
-                return updated_elements
+            return updated_elements
 
 
 def update_unit_in_ordered_elements(
@@ -673,7 +610,7 @@ def what_is_sequence(elements: List[TimeElement]) -> Optional[str]:
         return None
     # Get the units of elements found in a sequence of units_sequence and then
     # check if found units are the same as the elements
-    for seq_name, seq_units in units_sequence.items():
+    for seq_name, seq_units in UNITS_SEQUENCE.items():
         matched_units = [
             element.element_unit
             for element in elements
@@ -691,7 +628,7 @@ def what_is_sequence(elements: List[TimeElement]) -> Optional[str]:
 
 def sort_elements_by_sequence(
     elements: List[TimeElement],
-) -> Tuple[Union[List[Union[TimeElement, str]], None], List[str]]:
+) -> Tuple[Union[List[TimeElement], None], List[str]]:
     """
     Sorts the elements by their sequence and returns the sorted elements along
         with missing indicator and units.
@@ -703,8 +640,7 @@ def sort_elements_by_sequence(
     Returns:
         Tuple [ Union[ List [ TimeElement,None ],None ], bool, List [ str ] ]:
         - A tuple containing:
-        - A list sorted elements and name of missing units based on the
-            valid sequence,
+        - A list sorted elements based on the valid sequence,
         - A list of missing units.
         - None and an empty list if the elements is empty or not in a valid sequence,
     """
@@ -723,7 +659,7 @@ def sort_elements_by_sequence(
     # Determine the expected sequence of elements
     expected_elements_sequence = sequence[start_index: end_index + 1]
     units_in_elements = {element.element_unit for element in elements}
-    final_elements: List[Union[TimeElement, str]] = []
+    final_elements: List[TimeElement] = []
     missing_units: List[str] = []
     for i, unit in enumerate(expected_elements_sequence):
         if unit in units_in_elements:
@@ -731,7 +667,6 @@ def sort_elements_by_sequence(
             assert element is not None, "element cannot be None (checked)"
             final_elements.append(element)
         else:
-            final_elements.append(unit)
             missing_units.append(unit)
     return final_elements, missing_units
 
@@ -782,14 +717,17 @@ def are_ordered_elements_comparable(
         is_ordered_elements(elements1)
         is_ordered_elements(elements2)
     except ValueError as e:
-        raise ValueError(f"{func_name}:arguments elements1 and elements2:{e}")
+        raise ValueError(
+            f"{func_name}:arguments elements1"
+            " and elements2 are not ordered"
+            ) from e
     else:
         elements1_sequence = get_elements_sequence(elements1)
         elements2_sequence = get_elements_sequence(elements2)
         assert elements1_sequence is not None, "Sequence1 not None (checked)"
         assert elements2_sequence is not None, "Sequence2 not None (checked)"
-        elements1_last_unit_index = elements1_sequence.index(elements1[-1])
-        elements2_last_unit_index = elements2_sequence.index(elements2[-1])
+        elements1_last_unit_index = elements1_sequence.index(elements1[-1].element_unit)
+        elements2_last_unit_index = elements2_sequence.index(elements2[-1].element_unit)
 
         scope1 = find_scope_in_ordered_elements(elements1)
         scope2 = find_scope_in_ordered_elements(elements2)
@@ -851,7 +789,6 @@ def check_elements_validity(elements: List[TimeElement]) -> bool:
     month, _ = get_value_by_unit_from_elements("MH", elements)
     day, _ = get_value_by_unit_from_elements("DY", elements)
     week, _ = get_value_by_unit_from_elements("WK", elements)
-    weekday, _ = get_value_by_unit_from_elements("WY", elements)
 
     if what_is_sequence(elements) == "gre":
         if day:
@@ -874,21 +811,10 @@ def check_elements_validity(elements: List[TimeElement]) -> bool:
                         )
     elif what_is_sequence(elements) == "iso":
         if week == 53:
-            possible, possible_years = (
-                check_possibility_weekday_week(weekday, week))
-            if not possible:
-                # fmt: off
+            possible_years = YEARS_WITH_53_WEEKS
+            if (year and year not in possible_years):
                 raise ValueError(
-                    f"{func_name}: The weekday {weekday}"
-                    f"in week {week} is not valid"
-                )
-            # fmt: on
-            else:
-                if (year
-                        and possible_years is not None
-                        and year not in possible_years):
-                    raise ValueError(
-                        f"{func_name}: The year {year} does not have 53 weeks")
+                    f"{func_name}: The year {year} does not have 53 weeks")
     elif what_is_sequence(elements) is None:
         raise ValueError(
             f"{func_name}: The elements are not in a valid sequence")
@@ -908,32 +834,6 @@ def is_valid_week_53(year: int) -> bool:
 
     iso_year, week, weekday = datetime(year, 12, 28).isocalendar()
     return week == 53
-
-
-def check_possibility_weekday_week(
-    weekday: Union[TimeElement, int, None], week: Union[TimeElement, int]
-) -> Tuple[bool, Optional[List[int]]]:
-    """
-    Check the possibility of a given weekday and week.
-
-    Args:
-        weekday (Union[TimeElement, int, None]): The weekday to check.
-        week (Union[TimeElement, int]): The week to check.
-
-    Returns:
-        Tuple [ bool , Optional [ List [ int ] ] ]: A tuple containing:
-                - A boolean indicates there are years with week and weekday
-                in arguemnts
-                - A list of years that have week(=53) and weekdays in the args.
-                None means the week (<53) and weekday are exist in all years
-
-    """
-
-    if week != 53:
-        return True, None
-    else:
-        possible_years = find_year_with_53_weeks(weekday)
-        return bool(possible_years), possible_years
 
 
 def find_ordered_elements_over_under_units(
@@ -1019,7 +919,7 @@ def iso_to_gregorian(
     target_date = start_of_year + timedelta(weeks=week - 1, days=weekday - 1)
 
     # If the target week number is 53, check if the year actually has 53 weeks
-    if week == 53 and target_date.year != year:
+    if week == 53 and year not in YEARS_WITH_53_WEEKS:
         return None
 
     # Add the time components
@@ -1129,6 +1029,7 @@ def compare_two_datetimes_ints(
         int: 1 if the first datetime is greater than the second datetime,
             -1 if the first datetime is less than the second datetime,
             0 if the first datetime is equal to the second datetime.
+            -2 if the comparison is not possible.
     """
 
     dt1 = None
@@ -1162,7 +1063,7 @@ def compare_two_datetimes_ints(
 # fmt: off
 def compare_two_ordered_comparable_elements(
     elements1: List[TimeElement],
-    elements2: List[TimeElement], leap_year: bool = False
+    elements2: List[TimeElement]
 ) -> Union[int, Dict[str, List[int]]]:
     # fmt: on
     """
@@ -1171,8 +1072,7 @@ def compare_two_ordered_comparable_elements(
     Args:
         elements1 (List[TimeElement]): The first list of TimeElement objects.
         elements2 (List[TimeElement]): The second list of TimeElement objects.
-        leap_year (bool, optional): Flag indicating whether to consider leap
-                                    years. Defaults to False.
+
 
     Returns:
         Union [ int, Dict [ str, List [ int ] ] ]:
@@ -1208,18 +1108,19 @@ def compare_two_ordered_comparable_elements(
 
     else:
         is_leap_element1 = (True if (
-            is_elements_leap(elements1) or leap_year) else False)
+            is_elements_leap(elements1)) else False)
         is_leap_element2 = (True if (
-            is_elements_leap(elements2) or leap_year) else False)
-        compare_in_leap = is_leap_element1 or is_leap_element2 or leap_year
+            is_elements_leap(elements2)) else False)
+        compare_in_leap = is_leap_element1 or is_leap_element2
 
         is_iso_elements1 = (
-            False if what_is_sequence(elements1) == "iso" else True
+            True if what_is_sequence(elements1) == "iso" else False
         )
 
         is_iso_elements2 = (
-            False if what_is_sequence(elements2) == "iso" else True
+            True if what_is_sequence(elements2) == "iso" else False
         )
+
         compare_type: CompareSequnce
         if (is_iso_elements1 ^ is_iso_elements2):
             compare_type = CompareSequnce.ISO_GRE
@@ -1237,31 +1138,32 @@ def compare_two_ordered_comparable_elements(
             "equal": []
         }
         wk_value1, wk_value2, wy_value1, wy_value2 = None, None, None, None
-        # set_years, temp_years = Optional[List[int]], Optional[List[int]]
+        iso_available_years = None
         set_years = []
         temp_years = []
-        wk_value1 = get_value_by_unit_from_elements("WK", elements1)
-        wk_value2 = get_value_by_unit_from_elements("WK", elements2)
-        wy_value1 = get_value_by_unit_from_elements("WY", elements1)
-        wy_value2 = get_value_by_unit_from_elements("WY", elements2)
+        wk_value1 = get_value_by_unit_from_elements("WK", elements1)[0]
+        wy_value1 = get_value_by_unit_from_elements("WY", elements1)[0]
+        wk_value2 = get_value_by_unit_from_elements("WK", elements2)[0]
+        wy_value2 = get_value_by_unit_from_elements("WY", elements2)[0]
+        
         if wk_value2 == 53 or wk_value2 == 53:
             iso_available_years = YEARS_WITH_53_WEEKS
 
-        # Ensure that the values are of the correct type before passing
         if compare_type == CompareSequnce.GRE:
             if compare_in_leap:
-                set_years = [2024]
+                temp_years = [2024]
             else:
-                set_years = [2023]
+                temp_years = [2023]
+
         elif compare_type == CompareSequnce.ISO:
-            set_years = list(iso_available_years) if iso_available_years else [2023]
+            temp_years = list(iso_available_years) if iso_available_years else [2023]
         elif compare_type == CompareSequnce.ISO_GRE:
             if is_iso_elements1 and not is_iso_elements2:
                 if is_iso_greg_compare_consistent(
                     3, 2023, wk_value1, wy_value1,  # type: ignore
                     2023, complete_elements2[1], complete_elements2[2]  # type: ignore
                 ):
-                    set_years = (
+                    temp_years = (
                         list(iso_available_years)
                         if iso_available_years else [2023]
                     )
@@ -1275,9 +1177,10 @@ def compare_two_ordered_comparable_elements(
                     3, 2023, wk_value2, wy_value2,  # type: ignore
                     2023, complete_elements1[1], complete_elements1[2]  # type: ignore
                 ):
-                    set_years = [2023]
+                    
+                    temp_years = [2023]
                 else:
-                    set_years = (
+                    temp_years = (
                         list(iso_available_years) if iso_available_years
                         else list(range(START_YEAR, END_YEAR + 1))
                     )
@@ -1287,6 +1190,9 @@ def compare_two_ordered_comparable_elements(
             ^ (not calendar.isleap(y) and not compare_in_leap)
         ]
         scope = find_scope_in_ordered_elements(elements1)
+
+        # If the scope is None, it means the ordered elements has year unit
+        # so compare the complete elements
         if scope is None:
             set_elements1_ints = _set_complete_elements_values(
                 complete_elements1, [1, 1, 1, 0, 0, 0]
@@ -1300,8 +1206,11 @@ def compare_two_ordered_comparable_elements(
                 set_elements2_ints,
                 is_iso_elements2,
             )
-
+        # If the scope is "YR". Comparing may be between iso and gregorian
+        # the result of comparsion my be different in different years
         elif scope == "YR":
+            # compairing only in one year
+            
             if len(set_years) == 1:
                 set_elements1_ints = _set_complete_elements_values(
                     complete_elements1, [set_years[0], 1, 1, 0, 0, 0]
@@ -1316,6 +1225,7 @@ def compare_two_ordered_comparable_elements(
                     is_iso_elements2,
                 )
             else:
+                # Comparing in a set of years
                 for year in set_years:
                     set_elements1_ints = _set_complete_elements_values(
                         complete_elements1, [year, 1, 1, 0, 0, 0]
@@ -1335,7 +1245,36 @@ def compare_two_ordered_comparable_elements(
                         compared_years["less"].append(year)
                     else:
                         compared_years["equal"].append(year)
-                return compared_years
+                # check if the result is same for all years and the result years
+                # sre the same as the range of years, retrun a single int indicator
+                result_list: List[int]
+                result_int: int
+                is_one_subset = False
+                if (compared_years["greater"]
+                        and not compared_years["less"]
+                        and not compared_years["equal"]):
+                    result_list = compared_years["greater"]
+                    result_int = 1
+                    is_one_subset = True
+                elif (compared_years["less"]
+                        and not compared_years["greater"]
+                        and not compared_years["equal"]):
+                    result_list = compared_years["less"]
+                    result_int = -1
+                    is_one_subset = True
+                elif (compared_years["equal"]
+                        and not compared_years["greater"]
+                        and not compared_years["less"]):
+                    result_list = compared_years["equal"]
+                    result_int = 0
+                    is_one_subset = True
+                if is_one_subset:
+                    if result_list == list(range(START_YEAR, END_YEAR+1)):
+                        return result_int
+                    else:
+                        return compared_years
+                else:
+                    return compared_years 
         else:
             for x, y in zip(elements1, elements2):
                 if x.element_value > y.element_value:
@@ -1378,14 +1317,14 @@ def units_vlaues_to_ordered_elements(
 
     func_name = units_vlaues_to_ordered_elements.__name__
     arguments = [
-        ("year", year),
-        ("month", month),
-        ("day", day),
-        ("hour", hour),
-        ("minute", minute),
-        ("second", second),
-        ("weekday", weekday),
-        ("week", week),
+        ("YR", year),
+        ("MH", month),
+        ("DY", day),
+        ("HR", hour),
+        ("ME", minute),
+        ("SD", second),
+        ("WY", weekday),
+        ("WK", week),
     ]
 
     temp_elements = [
@@ -1399,16 +1338,12 @@ def units_vlaues_to_ordered_elements(
     if not final_list or final_list is None:
         return []
     else:
-        # Filter out any strings, ensuring only TimeElement objects remain
-        filtered_final_list = [el for el in final_list if isinstance(
-            el, TimeElement)]
-
         try:
-            is_ordered_elements(temp_elements)
+            is_ordered_elements(final_list)
         except ValueError as e:
             raise ValueError(f"{func_name}:result elements:{e}")
         else:
-            return filtered_final_list
+            return final_list
 
 
 def ordered_elements_default_representation(
