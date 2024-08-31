@@ -239,14 +239,25 @@ class TimeElement:
         """
         if not cls._units.get(unit_name):
             raise ValueError(f"Invalid unit name '{unit_name}'")
+        callable_val_scope_dy = cast(
+            Callable[[int, Union[str, None]], List[int]],
+            cls._units[unit_name]["values_to_end_scope"],
+        )
         callable_val_scope = cast(
-            Callable[[int, Union[int, None]], List[int]],
+            Callable[[int], List[int]],
             cls._units[unit_name]["values_to_end_scope"],
         )
         if unit_name == "DY":
-            return callable_val_scope(start_value, month)
+            allowed_values: Dict[str, int] = cast(
+                Dict[str, int], cls._units["MH"]["allowed_values"]
+            )
+            month_name = next(
+                (k for k, v in allowed_values.items() if v == month),
+                None,
+            )
+            return callable_val_scope_dy(start_value, month_name)
         else:
-            return callable_val_scope(start_value, None)
+            return callable_val_scope(start_value)
 
     # fmt: off
     @staticmethod
@@ -386,6 +397,7 @@ class TimeElement:
                 value is encountered for a time unit.
 
         """
+        func_name = TimeElement.parse_time_string_to_elements.__name__
         matched_elements = []
         matched_substrings = []
         unmatched_substrings = []
@@ -396,20 +408,16 @@ class TimeElement:
             match_found = False
             for unit_key, unit_info in TimeElement._units.items():
                 unit_alt_pattern = cast(str, unit_info["alternative_pattern"])
+                unit_def_pattern = cast(str, unit_info["default_pattern"])
+                unit_pattern = f"({unit_def_pattern}|{unit_alt_pattern})"
                 # Try to match with default pattern
                 # fmt: off
                 default_match = re.match(
-                    unit_alt_pattern, remaining_string)
-                alternative_match = re.match(
-                    unit_alt_pattern, remaining_string
-                )
+                    unit_pattern, remaining_string)
                 # fmt: on
-                if default_match or alternative_match:
+                if default_match:  # or alternative_match:
                     # fmt: off
-                    match = (
-                        default_match
-                        if default_match
-                        else alternative_match)
+                    match = default_match
                     assert match is not None, "Match should not be None"
                     matched_string = match.group()
                     # fmt: on
@@ -421,7 +429,7 @@ class TimeElement:
                         else:
                             # fmt: off
                             raise ValueError(
-                                f"Could not extract digits from"
+                                f"{func_name}: Could not extract digits from"
                                 f"{matched_string} for unit '{unit_key}'"
                             )
                             # fmt: on
@@ -440,7 +448,7 @@ class TimeElement:
                             else:
                                 # fmt: off
                                 raise ValueError(
-                                    f"Invalid string value '{value_str}'"
+                                    f"{func_name}: Invalid string value '{value_str}'"
                                     f"for unit '{unit_key}'"
                                 )
                                 # fmt: on
@@ -450,7 +458,7 @@ class TimeElement:
                     except ValueError as ve:
                         # fmt: off
                         raise ValueError(
-                            f"Error validating value '{value}' for"
+                            f"{func_name}:Error validating value '{value}' for"
                             f" unit '{unit_key}'"
                         ) from ve
                         # fmt: on

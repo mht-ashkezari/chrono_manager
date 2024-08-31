@@ -203,7 +203,6 @@ def get_value_by_unit_from_elements(
     Returns:
         Tuple [Optional [ int , None ], Optional [ int , None ] ]:
             A tuple containing:
-            - A boolean indicating whether the unit was found.
             - The value of the unit if found, otherwise `None`.
             - The index of the element in the list if found, otherwise `None`.
 
@@ -794,7 +793,7 @@ def check_elements_validity(elements: List[TimeElement]) -> bool:
         if day:
             if month:
                 if day > TimeElement.get_max_value("DY", month):
-                    ValueError(
+                    raise ValueError(
                         f"{func_name}: The day value {day}"
                         f" is not valid for month {month}"
                     )
@@ -1096,13 +1095,7 @@ def compare_two_ordered_comparable_elements(
     func_name = compare_two_ordered_comparable_elements.__name__
 
     try:
-        if not are_ordered_elements_comparable(elements1, elements2):
-            # fmt: off
-            raise ValueError(
-                f"{func_name}:elements1 and elements2 must be"
-                f"ordered and matchable ot each other."
-            )
-            # fmt: on
+        _ = are_ordered_elements_comparable(elements1, elements2)
     except ValueError as e:
         raise ValueError(f"{func_name}:arguments elements1 and elements2:{e}")
 
@@ -1145,7 +1138,6 @@ def compare_two_ordered_comparable_elements(
         wy_value1 = get_value_by_unit_from_elements("WY", elements1)[0]
         wk_value2 = get_value_by_unit_from_elements("WK", elements2)[0]
         wy_value2 = get_value_by_unit_from_elements("WY", elements2)[0]
-        
         if wk_value2 == 53 or wk_value2 == 53:
             iso_available_years = YEARS_WITH_53_WEEKS
 
@@ -1177,7 +1169,6 @@ def compare_two_ordered_comparable_elements(
                     3, 2023, wk_value2, wy_value2,  # type: ignore
                     2023, complete_elements1[1], complete_elements1[2]  # type: ignore
                 ):
-                    
                     temp_years = [2023]
                 else:
                     temp_years = (
@@ -1210,7 +1201,6 @@ def compare_two_ordered_comparable_elements(
         # the result of comparsion my be different in different years
         elif scope == "YR":
             # compairing only in one year
-            
             if len(set_years) == 1:
                 set_elements1_ints = _set_complete_elements_values(
                     complete_elements1, [set_years[0], 1, 1, 0, 0, 0]
@@ -1274,7 +1264,7 @@ def compare_two_ordered_comparable_elements(
                     else:
                         return compared_years
                 else:
-                    return compared_years 
+                    return compared_years
         else:
             for x, y in zip(elements1, elements2):
                 if x.element_value > y.element_value:
@@ -1286,13 +1276,12 @@ def compare_two_ordered_comparable_elements(
 
 def units_vlaues_to_ordered_elements(
     year: Optional[int],
-    month: Optional[int],
-    day: Optional[int],
+    month_week: Optional[int],
+    day_weekday: Optional[int],
     hour: Optional[int],
     minute: Optional[int],
     second: Optional[int],
-    weekday: Optional[int],
-    week: Optional[int],
+    is_iso: bool,
 ) -> List[TimeElement]:
     """
     Convert units values to ordered elements.
@@ -1316,22 +1305,27 @@ def units_vlaues_to_ordered_elements(
     """
 
     func_name = units_vlaues_to_ordered_elements.__name__
-    arguments = [
-        ("YR", year),
-        ("MH", month),
-        ("DY", day),
-        ("HR", hour),
-        ("ME", minute),
-        ("SD", second),
-        ("WY", weekday),
-        ("WK", week),
-    ]
 
-    temp_elements = [
-        TimeElement(unit, value)
-        for unit, value in arguments
-        if value is not None
-    ]
+    if is_iso:
+        mid_args = [
+            ("WY", day_weekday),
+            ("WK", month_week),
+        ]
+    else:
+        mid_args = [
+            ("MH", month_week),
+            ("DY", day_weekday),
+        ]
+    arguments = [
+        ("YR", year)] + mid_args + [("HR", hour), ("ME", minute), ("SD", second)]
+    try:
+        temp_elements = [
+            TimeElement(unit, value)
+            for unit, value in arguments
+            if value is not None
+        ]
+    except ValueError as e:
+        raise ValueError(f"{func_name}:arguments elements:{e}")
 
     final_list, _ = sort_elements_by_sequence(temp_elements)
 

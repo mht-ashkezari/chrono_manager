@@ -788,7 +788,7 @@ def test_compare_two_ordered_comparable_elements(elements1, elements2, expected_
 
 
 @pytest.mark.parametrize(
-    "year, month, day, hour, minute, second, weekday, week, expected_elements",
+    "year, month, day, hour, minute, second, is_iso, expected_elements",
     [
         (
             2023,
@@ -797,8 +797,7 @@ def test_compare_two_ordered_comparable_elements(elements1, elements2, expected_
             12,
             0,
             0,
-            None,
-            None,
+            False,
             [
                 TimeElement("YR", 2023),
                 TimeElement("MH", 8),
@@ -810,35 +809,41 @@ def test_compare_two_ordered_comparable_elements(elements1, elements2, expected_
         ),
         (
             None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            7,
             53,
+            7,
+            None,
+            None,
+            None,
+            True,
             [TimeElement("WK", 53), TimeElement("WY", 7)],
         ),  # ISO Week/Weekday only
         (
             None,
-            8,
+            38,
             None,
             None,
             None,
             None,
-            7,
-            53,
-            [],
-        ),  # Incorrect TiemElement instance
+            False,
+            None,  # Expected to raise ValueError
+        ),  # Incorrect TimeElement instance
     ],
 )
 def test_units_vlaues_to_ordered_elements(
-    year, month, day, hour, minute, second, weekday, week, expected_elements
+    year, month, day, hour, minute, second, is_iso, expected_elements
 ):
-    result = units_vlaues_to_ordered_elements(
-        year, month, day, hour, minute, second, weekday, week
-    )
-    assert result == expected_elements, f"Expected {expected_elements} but got {result}"
+    if expected_elements is None:
+        with pytest.raises(ValueError):
+            units_vlaues_to_ordered_elements(
+                year, month, day, hour, minute, second, is_iso
+            )
+    else:
+        result = units_vlaues_to_ordered_elements(
+            year, month, day, hour, minute, second, is_iso
+        )
+        assert (
+            result == expected_elements
+        ), f"Expected {expected_elements} but got {result}"
 
 
 @pytest.mark.parametrize(

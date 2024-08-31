@@ -81,14 +81,22 @@ class TimePoint:
 
         elements: List[TimeElement] = []
         if isinstance(telements, str):
-            elems, _, unmatched = TimeElement.parse_time_string_to_elements(telements)
-            if not elems:
-                raise TimePointArgumentError("argument(str) has no valid elements")
-            if unmatched:
-                raise TimePointArgumentError(
-                    f" argument(str) has unmatched substr:{unmatched}"
+            try:
+                elems, _, unmatched = TimeElement.parse_time_string_to_elements(
+                    telements
                 )
-            elements = elems
+            except ValueError as e:
+                raise TimePointCreationError(
+                    f"Error in creating TimePoint instance: {e}"
+                )
+            else:
+                if not elems:
+                    raise TimePointArgumentError("argument(str) has no valid elements")
+                if unmatched:
+                    raise TimePointArgumentError(
+                        f" argument(str) has unmatched substr:{unmatched}"
+                    )
+                elements = elems
         else:
             elements = telements
         sorted_elements, missings = sort_elements_by_sequence(elements)
@@ -127,7 +135,7 @@ class TimePoint:
                     "MH", self._time_elements
                 )[0]
                 self._week = get_value_by_unit_from_elements("WK", self._time_elements)[
-                    1
+                    0
                 ]
                 self._weekday = get_value_by_unit_from_elements(
                     "WY", self._time_elements
@@ -149,7 +157,7 @@ class TimePoint:
         return self.default_representation
 
     def __repr__(self) -> str:
-        return f"TimePoint({self.default_representation})"
+        return f"TimePoint('{self.default_representation}')"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, TimePoint):
@@ -169,29 +177,6 @@ class TimePoint:
                 return element.element_value
         else:
             return None
-
-    @staticmethod
-    def create_timepoints_from_range(
-        range_values: List[List[int]], units: List[str]
-    ) -> List[TimePoint]:
-        def recursive_create(dim, current_elements):
-            if dim == len(range_values):
-                # All dimensions have been processed, create a TimePoint
-                return [TimePoint(current_elements)]
-
-            timepoints = []
-            for value in range_values[dim]:
-                # Create a TimeElement for the current dimension
-                time_element = TimeElement(units[dim], value)
-                # Recurse to the next dimension
-                new_elements = current_elements + [time_element]
-                timepoints.extend(recursive_create(dim + 1, new_elements))
-
-            return timepoints
-
-            # Start the recursion with the first dimension
-
-        return recursive_create(0, [])
 
     @staticmethod
     def is_between_points(
@@ -229,6 +214,7 @@ class TimePoint:
             comp_result = compare_two_ordered_comparable_elements(
                 end_points.time_elements, start_points.time_elements
             )
+            print("compare: ", comp_result)
         except ValueError as e:
             raise TimePointNotComparableError(start, end) from e
         else:
@@ -331,129 +317,90 @@ class TimePoint:
             return result
 
     @staticmethod
-    def _next_points_in_over_range(
+    def _points_occurances_in_over_range(
         point: TimePoint, overs_starts: List[int], overs_ends: List[int]
-    ) -> List[List[int]]:
-        """
-        Generate the next points in the over range.
-
-        Args:
-            point (TimePoint): The current time point.
-            overs_starts (List[int]): The list of start values for each over.
-            overs_ends (List[int]): The list of end values for each over.
-
-        Returns:
-            List[List[int]]: The list of next points in the over range.
-        """
-
+    ) -> List[TimePoint]:
         overs_length = min(len(overs_starts), len(overs_ends))
-        over_units = point.over_units[-overs_length:]
+        point_over_units = point.over_units
+        over_units = point_over_units[-overs_length:]
+        null_over = [None] * (len(point_over_units) - overs_length)
+
         has_month: bool = "MH" in over_units
 
-        def create_ranges(
+        def create_timepoints(
             dim: int,
             starts: List[int],
             ends: List[int],
             current_month: int,
+            accumulated_values: List[int],
             is_first: bool,
             is_last: bool,
-        ) -> List:
-            if dim == len(over_units):  # Base case: we've added all dimensions
-                return []
+        ) -> List[TimePoint]:
+            if dim == len(over_units):
+                # Create a TimePoint at the deepest level of recursion
+                all_values = (
+                    null_over
+                    + accumulated_values
+                    + list(point.filled_timepoint_on_type.values)
+                )
 
-            # Determine the current range based on whether this is
-            # the first or last element in the previous dimension
-            if over_units[dim] == "YR":
-                current_range = list(range(starts[dim], ends[dim] + 1))
-            elif over_units[dim] == "DY":
-                # Assign the month value based on has_month
+                elements = units_vlaues_to_ordered_elements(*all_values, point.is_iso)
+                return [TimePoint(elements)]
+
+            results_list = []
+            month = None  # Initialize month to ensure it always has a value
+            if over_units[dim] == "DY":
                 month = current_month if has_month else None
 
-                if is_first:
-                    current_range = TimeElement.unit_values_to_end_scope(
-                        "DY", starts[dim], month
-                    )[starts[dim] - 1 :]
-                elif is_last:
-                    current_range = TimeElement.unit_values_to_end_scope("DY", 1, month)
-                else:
-                    current_range = TimeElement.unit_values_to_end_scope(
-                        "DY", ends[dim], month
-                    )
+            if over_units[dim] == "YR":
+                current_range = list(range(starts[dim], ends[dim] + 1))
             else:
                 if is_first:
-                    current_range = list(
-                        TimeElement.unit_values_to_end_scope("MH", 1, None)[
-                            starts[dim] - 1 :
-                        ]
-                    )
+                    current_range = TimeElement.unit_values_to_end_scope(
+                        over_units[dim], 1, None
+                    )[starts[dim] - 1 :]
                 elif is_last:
-                    current_range = TimeElement.unit_values_to_end_scope("MH", 1, None)
+                    current_range = TimeElement.unit_values_to_end_scope(
+                        over_units[dim], 1, None
+                    )[: ends[dim]]
                 else:
                     current_range = TimeElement.unit_values_to_end_scope(
-                        "MH", ends[dim], None
+                        over_units[dim], 1, month
                     )
 
-            # Create the next dimension based on the current range
-            next_dimension = [
-                create_ranges(
-                    dim + 1,
-                    starts,
-                    ends,
-                    current_month=i + 1 if over_units[dim] == "MH" else current_month,
-                    is_first=(i == 0),
-                    is_last=(i == len(current_range) - 1),
+            for i, val in enumerate(current_range):
+                new_accumulated_values = accumulated_values + [val]
+                results_list.extend(
+                    create_timepoints(
+                        dim + 1,
+                        starts,
+                        ends,
+                        current_month=(
+                            i + 1 if over_units[dim] == "MH" else current_month
+                        ),
+                        accumulated_values=new_accumulated_values,
+                        is_first=(i == 0),
+                        is_last=(i == len(current_range) - 1),
+                    )
                 )
-                for i in range(len(current_range))
-            ]
 
-            # Combine the current range with the next dimension
-            if not next_dimension:
-                return current_range
-            return [[r] + n for r, n in zip(current_range, next_dimension)]
+            return results_list
 
-        # Generate the multi-dimensional range list
-        result = create_ranges(
-            0, overs_starts, overs_ends, current_month=1, is_first=True, is_last=True
+        result = create_timepoints(
+            0,
+            overs_starts,
+            overs_ends,
+            current_month=1,
+            accumulated_values=[],
+            is_first=True,
+            is_last=True,
         )
         return result
 
     @staticmethod
-    def _create_timepoints_from_range(
-        range_values: List[List[int]], units: List[str]
-    ) -> List[TimePoint]:
-        """
-        Create a list of TimePoint objects based on the given range values and units.
-        Args:
-            range_values (List[List[int]]): A list of lists containing the range values
-                                            for each dimension.
-            units (List[str]): A list of units corresponding to each dimension.
-        Returns:
-            List[TimePoint]: A list of TimePoint objects created from the range values.
-        """
-
-        def recursive_create(dim, current_elements):
-            if dim == len(range_values):
-                # All dimensions have been processed, create a TimePoint
-                return [TimePoint(current_elements)]
-
-            timepoints = []
-            for value in range_values[dim]:
-                # Create a TimeElement for the current dimension
-                time_element = TimeElement(units[dim], value)
-                # Recurse to the next dimension
-                new_elements = current_elements + [time_element]
-                timepoints.extend(recursive_create(dim + 1, new_elements))
-
-            return timepoints
-
-            # Start the recursion with the first dimension
-
-        return recursive_create(0, [])
-
-    @staticmethod
     def occurrences_in_period(
-        point: TimePoint, start: TimePoint, end: TimePoint
-    ) -> Optional[List[TimePoint]]:
+        point: "TimePoint", start: "TimePoint", end: "TimePoint"
+    ) -> Optional[List["TimePoint"]]:
         """
         Calculate the occurrences of a given time point within a specified period.
 
@@ -473,46 +420,63 @@ class TimePoint:
                                     time points.
             TimePointOccurrenceError: If the start time point is greater than or equal
                                     to the end time point.
-
         """
 
-        over_units_in_start = [unit for unit in start.units if unit in point.over_units]
-        over_units_in_end = [unit for unit in end.units if unit in point.over_units]
-        if not over_units_in_start or not over_units_in_end:
-            raise TimePointOccurrenceError(" no over units in start or end")
-        if not (1 < len(over_units_in_start) <= len(point.over_units)) or not (
-            1 < len(over_units_in_end) <= len(point.over_units)
-        ):
-            raise TimePointOccurrenceError("no sufficient units in start or end")
-        overs_length = min(len(over_units_in_start), len(over_units_in_end))
-        over_units = point.over_units[-overs_length:]
+        common_units = set(start.units).intersection(end.units)
 
-        for i in range(overs_length):
-            if start.time_elements[i] >= end.time_elements[i]:
-                raise TimePointOccurrenceError(
-                    "overs_starts must be less than overs_ends"
-                )
-        starts = start.values[-overs_length:]
-        ends = end.values[-overs_length:]
-        ranges = TimePoint._next_points_in_over_range(point, starts, ends)
-        return TimePoint._create_timepoints_from_range(ranges, over_units)
+        point_required_units = set(point.over_units[-2:])
 
-    @property
-    def end_point_in_scope(self):
-        index = self.sequence_units.index(self._scope)
-        return (
-            TimePoint(END_SCOPE_ELEMENTS_ISO[index:])
-            if self.sequence_name == "iso"
-            else TimePoint(END_SCOPE_ELEMENTS_GRE[index:])
+        if not point_required_units.issubset(common_units):
+            raise TimePointOccurrenceError(
+                "Insufficient units in start or end time points."
+            )
+
+        start_point_common_count = sum(1 for unit in start.units if unit in point.units)
+        end_point_common_count = sum(1 for unit in end.units if unit in point.units)
+
+        len_start_over_point = len(start.units) - start_point_common_count
+        len_end_over_point = len(end.units) - end_point_common_count
+
+        common_over_length = min(len_start_over_point, len_end_over_point)
+        start_values = start.values[
+            -(len_start_over_point + common_over_length) : -(len_start_over_point - 1)
+        ]
+        end_values = end.values[
+            -(len_end_over_point + common_over_length) : -(len_end_over_point - 1)
+        ]
+
+        for start_value, end_value in zip(start_values, end_values):
+            if start_value < end_value:
+                break
+        else:
+            raise TimePointOccurrenceError("Start values must be less than end values.")
+
+        return TimePoint._points_occurances_in_over_range(
+            point, start_values, end_values
         )
 
     @property
-    def start_point_in_scope(self):
-        index = self.sequence_units.index(self._scope)
+    def end_point_in_scope(self):
+        if self._scope is None:
+            index = 0
+        else:
+            index = self.sequence_units.index(self._scope)
         return (
-            TimePoint(START_SCOPE_ELEMENTS_ISO[index:])
+            TimePoint(list(END_SCOPE_ELEMENTS_ISO[index:]))
             if self.sequence_name == "iso"
-            else TimePoint(START_SCOPE_ELEMENTS_GRE[index:])
+            else TimePoint(list(END_SCOPE_ELEMENTS_GRE[index:]))
+        )
+
+    @property
+    def start_point_in_scope(self) -> TimePoint:
+        if self._scope is None:
+            index = 0
+        else:
+            index = self.sequence_units.index(self._scope)
+        return (
+            TimePoint(list(START_SCOPE_ELEMENTS_ISO[index:]))
+            if self.sequence_name == "iso"
+            else TimePoint(list(START_SCOPE_ELEMENTS_GRE[index:]))
         )
 
     @property
@@ -550,7 +514,8 @@ class TimePoint:
 
     @property
     def filled_timepoint_on_type(self) -> TimePoint:
-        values = [val for val in self.filled_on_type if isinstance(val, int)]
+        values = [val if isinstance(val, int) else None for val in self.filled_on_type]
+        values.append(self.is_iso)
         time_elms = units_vlaues_to_ordered_elements(*values)
         return TimePoint(time_elms)
 
@@ -587,11 +552,13 @@ class TimePoint:
     @property
     def start_point(self) -> TimePoint:
         vals = [v if isinstance(v, int) else None for v in self.start_filled]
+        vals.append(self.is_iso)
         return TimePoint(units_vlaues_to_ordered_elements(*vals))
 
     @property
     def end_point(self) -> TimePoint:
         vals = [v if isinstance(v, int) else None for v in self.end_filled]
+        vals.append(self.is_iso)
         return TimePoint(units_vlaues_to_ordered_elements(*vals))
 
     @property

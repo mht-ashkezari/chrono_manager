@@ -107,7 +107,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "over_join_units": ["ME"],
         "under_join_units": [],
         "unit_as_seconds": 1,
-        " values_to_end_scope": lambda start_value: list(range(start_value, 60)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 60)),
     },
     "ME": {
         "unit_name": "minute",
@@ -120,7 +120,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "over_join_units": ["HR"],
         "under_join_units": ["SD"],
         "unit_as_seconds": 60,
-        " values_to_end_scope": lambda start_value: list(range(start_value, 60)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 60)),
     },
     "HR": {
         "unit_name": "hour",
@@ -133,7 +133,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "over_join_units": ["DY", "WY"],
         "under_join_units": ["ME"],
         "unit_as_seconds": 3600,
-        " values_to_end_scope": lambda start_value: list(range(start_value, 24)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 24)),
     },
     "WY": {
         "unit_name": "weekday",
@@ -147,7 +147,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
             "SA": 6,
             "SU": 7,
         },
-        "default_pattern": r"-(1|2|3|4|5|6|7)",
+        "default_pattern": r"-(1|2|3|4|5|6|7)(?!\d)",
         "alternative_pattern": r"(MO|TU|WE|TH|FR|SA|SU)",
         "default_representation": lambda value: f"-{value}",
         "alternative_representation": lambda value: next(
@@ -158,7 +158,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "over_join_units": ["WK"],
         "under_join_units": ["HR"],
         "unit_as_seconds": 86400,
-        " values_to_end_scope": lambda start_value: list(range(start_value, 8)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 8)),
     },
     "WK": {
         "unit_name": "week",
@@ -171,7 +171,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "over_join_units": ["YR"],
         "under_join_units": ["WY"],
         "unit_as_seconds": 604800,
-        " values_to_end_scope": lambda start_value: list(range(start_value, 54)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 54)),
     },
     "DY": {
         "unit_name": "day",
@@ -190,20 +190,20 @@ UNITS: Dict[str, TimeUnitInfo] = {
             "Nov": {"min": 1, "max": 30},
             "Dec": {"min": 1, "max": 31},
         },
-        "default_pattern": r"(0[1-9]|[12]\d|3[01])",
+        "default_pattern": r"(?<!\d)(0[1-9]|[12]\d|3[01])(?!\d)",
         "alternative_pattern": r"D(0[1-9]|[12]\d|3[01])",
         "default_representation": lambda value: f"{value:02d}",
         "alternative_representation": lambda value: f"D{value:02d}",
         "over_join_units": ["MH"],
         "under_join_units": ["HR"],
         "unit_as_seconds": 86400,
-        " values_to_end_scope": lambda start_value, month: (
+        "values_to_end_scope": lambda start_value, month: (
             [31]
             if month is None
             else list(
                 range(
                     start_value,
-                    day_allow_vals[month]["max"] + 1,
+                    day_allow_vals[month]["max"],
                 )
             )
         ),
@@ -241,20 +241,20 @@ UNITS: Dict[str, TimeUnitInfo] = {
                 day_allow_vals[month]["max"] * 86400)
         ),
         # fmt: on
-        " values_to_end_scope": lambda start_value: list(range(start_value, 13)),
+        "values_to_end_scope": lambda start_value: list(range(start_value, 13)),
     },
     "YR": {
         "unit_name": "year",
         "value_type": "range",
         "allowed_values": {"min": START_YEAR, "max": END_YEAR},
-        "default_pattern": r"(\d{4})",
-        "alternative_pattern": r"Y?(\d{4})",
+        "default_pattern": r"(?<!\d)\d{4}(?!\d)",
+        "alternative_pattern": r"Y(\d{4})",
         "default_representation": lambda value: f"{value:04d}",
         "alternative_representation": lambda value: f"{value:04d}",
         "over_join_units": [],
         "under_join_units": ["WK", "MH"],
         "unit_as_seconds": lambda leap: 31622400 if leap else 31536000,
-        " values_to_end_scope": lambda start_value: list(
+        "values_to_end_scope": lambda start_value: list(
             range(start_value, END_YEAR + 1)
         ),
     },

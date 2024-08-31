@@ -1,9 +1,11 @@
-from typing import Tuple
+from typing import List, Tuple, Union
 from .timeelement import TimeElement
 from .units_constants import START_YEAR, END_YEAR
 from datetime import date
 from enum import Enum
 
+
+IntList = Union[int, List["IntList"]]
 
 END_SCOPE_ELEMENTS_GRE: Tuple[TimeElement, ...] = (
     TimeElement("YR", END_YEAR),
