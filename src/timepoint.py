@@ -77,81 +77,74 @@ class TimePointOccurrenceError(TimePointError):
 
 
 class TimePoint:
-    def __init__(self, telements: Union[List[TimeElement], str]) -> None:
 
-        elements: List[TimeElement] = []
+    def __init__(self, telements: Union[List[TimeElement], str]) -> None:
         if isinstance(telements, str):
-            try:
-                elems, _, unmatched = TimeElement.parse_time_string_to_elements(
-                    telements
-                )
-            except ValueError as e:
-                raise TimePointCreationError(
-                    f"Error in creating TimePoint instance: {e}"
-                )
-            else:
-                if not elems:
-                    raise TimePointArgumentError("argument(str) has no valid elements")
-                if unmatched:
-                    raise TimePointArgumentError(
-                        f" argument(str) has unmatched substr:{unmatched}"
-                    )
-                elements = elems
+            elements = self._parse_elements_from_string(telements)
         else:
             elements = telements
-        sorted_elements, missings = sort_elements_by_sequence(elements)
-        if missings:
-            raise TimePointArgumentError(f"argument has missing units:{missings}")
-        if not sorted_elements or sorted_elements is None:
-            raise TimePointArgumentError("argument has no valid elements")
-        else:
-            try:
-                is_ordered_elements(sorted_elements)
-            except ValueError as e:
-                raise TimePointCreationError(
-                    f"Error in creating TimePoint instance: {e}"
-                )
-            else:
-                self._time_elements = sorted_elements
-                self._is_iso = (
-                    True if what_is_sequence(self._time_elements) == "iso" else False
-                )
-                self._is_leap = is_elements_leap(self._time_elements)
-                self._scope = find_scope_in_ordered_elements(self._time_elements)
-                self._over_units = find_ordered_elements_over_under_units(
-                    self._time_elements
-                )["O"]
-                self._under_units = find_ordered_elements_over_under_units(
-                    self._time_elements
-                )["U"]
-                self._over_join_units = self._time_elements[0].over_join_units
-                self._under_join_units = self._time_elements[-1].under_join_units
-                self._point_type = PointType.START
 
-                self._year = get_value_by_unit_from_elements("YR", self._time_elements)[
-                    0
-                ]
-                self._month = get_value_by_unit_from_elements(
-                    "MH", self._time_elements
-                )[0]
-                self._week = get_value_by_unit_from_elements("WK", self._time_elements)[
-                    0
-                ]
-                self._weekday = get_value_by_unit_from_elements(
-                    "WY", self._time_elements
-                )[0]
-                self._day = get_value_by_unit_from_elements("DY", self._time_elements)[
-                    0
-                ]
-                self._hour = get_value_by_unit_from_elements("HR", self._time_elements)[
-                    0
-                ]
-                self._minute = get_value_by_unit_from_elements(
-                    "ME", self._time_elements
-                )[0]
-                self._second = get_value_by_unit_from_elements(
-                    "SD", self._time_elements
-                )[0]
+        sorted_elements, missing_units = sort_elements_by_sequence(elements)
+
+        if missing_units:
+            raise TimePointArgumentError(f"Missing units in argument: {missing_units}")
+
+        if not sorted_elements:
+            raise TimePointArgumentError("No valid elements found in the argument")
+
+        self._initialize_time_point(sorted_elements)
+
+    def _parse_elements_from_string(self, telements: str) -> List[TimeElement]:
+        try:
+            elements, _, unmatched = TimeElement.parse_time_string_to_elements(
+                telements
+            )
+        except ValueError as e:
+            raise TimePointCreationError(f"Error in creating TimePoint instance: {e}")
+
+        if not elements:
+            raise TimePointArgumentError("String argument has no valid elements")
+
+        if unmatched:
+            raise TimePointArgumentError(
+                f"String argument has unmatched substring: {unmatched}"
+            )
+
+        return elements
+
+    def _initialize_time_point(self, elements: List[TimeElement]) -> None:
+        try:
+            is_ordered_elements(elements)
+        except ValueError as e:
+            raise TimePointCreationError(f"Error in creating TimePoint instance: {e}")
+
+        self._time_elements = elements
+        self._is_iso = what_is_sequence(self._time_elements) == "iso"
+        self._is_leap = is_elements_leap(self._time_elements)
+        self._scope = find_scope_in_ordered_elements(self._time_elements)
+        self._over_units = self._find_units("O")
+        self._under_units = self._find_units("U")
+        self._over_join_units = self._time_elements[0].over_join_units
+        self._under_join_units = self._time_elements[-1].under_join_units
+        self._point_type = PointType.START
+
+        self._initialize_time_units()
+
+    def _find_units(self, unit_type: str) -> List[str]:
+        return find_ordered_elements_over_under_units(self._time_elements)[unit_type]
+
+    def _initialize_time_units(self) -> None:
+        self._year = self._get_unit_value("YR")
+        self._month = self._get_unit_value("MH")
+        self._week = self._get_unit_value("WK")
+        self._weekday = self._get_unit_value("WY")
+        self._day = self._get_unit_value("DY")
+        self._hour = self._get_unit_value("HR")
+        self._minute = self._get_unit_value("ME")
+        self._second = self._get_unit_value("SD")
+
+    def _get_unit_value(self, unit: str) -> Optional[int]:
+        return get_value_by_unit_from_elements(unit, self._time_elements)[0]
 
     def __str__(self) -> str:
         return self.default_representation

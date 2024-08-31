@@ -125,8 +125,14 @@ def test_init_with_iso_valid_string(
 @pytest.mark.parametrize(
     "invalid_string, expected_error_message",
     [
-        (invalid_string_no_elements, "argument(str) has no valid elements"),
-        (invalid_string_unmatched_substr, "argument(str) has unmatched substr"),
+        (
+            "",
+            "String argument has no valid elements",
+        ),
+        (
+            "2023-08-29_extra",
+            "Invalid argument: String argument has unmatched substring: ['_', 'e', 'x', 't', 'r', 'a']",
+        ),
     ],
 )
 def test_init_with_invalid_string(invalid_string, expected_error_message):
@@ -621,8 +627,8 @@ invalid_string = "2023-15-99"  # Invalid month and day
             "TimePoint instances are not comparable",
             lambda: raise_exception(
                 TimePointNotComparableError,
-                TimePoint([TimeElement("MH",10),TimeElement("DY",12)]),
-                TimePoint([TimeElement("DY",10),TimeElement("HR",12)]),
+                TimePoint([TimeElement("MH", 10), TimeElement("DY", 12)]),
+                TimePoint([TimeElement("DY", 10), TimeElement("HR", 12)]),
             ),
         ),
         (
@@ -675,15 +681,17 @@ def test_time_point_creation_error_invalid_elements(
 @pytest.mark.parametrize(
     "invalid_string, expected_exception",
     [
-        (invalid_string, TimePointArgumentError),
+        ("2023-15-99", TimePointArgumentError),
     ],
 )
 def test_time_point_argument_error_invalid_string(invalid_string, expected_exception):
     with pytest.raises(expected_exception) as exc_info:
         TimePoint(invalid_string)
-    assert "argument(str) has unmatched substr" in str(
+    assert "Invalid argument: String argument has unmatched substring: ['-', '-', '9', '9']" in str(
         exc_info.value
-    ) or "argument(str) has no valid elements" in str(exc_info.value)
+    ) or "argument(str) has no valid elements" in str(
+        exc_info.value
+    )
 
 
 def test_time_point_not_span_error_trigger():
