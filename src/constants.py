@@ -101,12 +101,12 @@ END_POINT_ISO = TimePoint(
 
 
 class SpanContain(Enum):
-    AHEAD = "ahead"
-    INSIDE = "inside"
-    BEHIND = "behind"
-    END_OVERLAPPED = "end_overlapped"
-    START_OVERLAPPED = "start_overlapped"
-    ERROR = "error"
+    AHEAD = "SpanContain.AHEAD"
+    INSIDE = "SpanContain.INSIDE"
+    BEHIND = "SpanContain.BEHIND"
+    END_OVERLAPPED = "SpanContain.END_OVERLAPPED"
+    START_OVERLAPPED = "SpanContain.START_OVERLAPPED"
+    ERROR = "SpanContain.ERROR"
 
 
 class SequnceName(Enum):
@@ -121,13 +121,13 @@ class SequnceName(Enum):
 
 
 class PeriodType(Enum):
-    START_START = "start_start"
-    START_END = "end_end"
-    END_START = "end_start"
-    END_END = "end_end"
-    BEFORE = "before"
-    AFTER = "after"
-    SINGLE_POINT = "single_point"
+    START_START = "PeriodType.START_START"
+    START_END = "PeriodType.START_END"
+    END_START = "PeriodType.END_START"
+    END_END = "PeriodType.END_END"
+    BEFORE = "PeriodType.BEFORE"
+    AFTER = "PeriodType.AFTER"
+    SINGLE_POINT = "PeriodType.SINGLE_POINT"
 
     def __str__(self):
         return self.value
@@ -137,9 +137,9 @@ class PeriodType(Enum):
 
 
 class SpanType(Enum):
-    BETWEEN = "between"
-    BEFORE = "before"
-    AFTER = "after"
+    BETWEEN = "SpanType.BETWEEN"
+    BEFORE = "SpanType.BEFORE"
+    AFTER = "SpanType.AFTER"
 
     def __str__(self):
         return self.value
@@ -149,8 +149,8 @@ class SpanType(Enum):
 
 
 class EdgeType(Enum):
-    START = "start"
-    END = "end"
+    START = "EdgeType.START"
+    END = "EdgeType.END"
 
     def __str__(self):
         return self.value

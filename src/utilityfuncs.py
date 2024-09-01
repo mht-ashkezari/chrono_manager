@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import calendar
 from .timeelement import TimeElement
 from .units_constants import START_YEAR, END_YEAR, UNITS_SEQUENCE
-from .configs import YEARS_WITH_53_WEEKS, CompareSequnce
+from .configs import YEARS_WITH_53_WEEKS, CombinedSequnce
 
 
 def days_to_year_start_iso(
@@ -1114,13 +1114,13 @@ def compare_two_ordered_comparable_elements(
             True if what_is_sequence(elements2) == "iso" else False
         )
 
-        compare_type: CompareSequnce
+        compare_type: CombinedSequnce
         if (is_iso_elements1 ^ is_iso_elements2):
-            compare_type = CompareSequnce.ISO_GRE
+            compare_type = CombinedSequnce.ISO_GRE
         elif (is_iso_elements1 and is_iso_elements2):
-            compare_type = CompareSequnce.ISO
+            compare_type = CombinedSequnce.ISO
         elif not is_iso_elements1 and not is_iso_elements2:
-            compare_type = CompareSequnce.GRE
+            compare_type = CombinedSequnce.GRE
 
         complete_elements1 = complete_ordered_elements(elements1)
         complete_elements2 = complete_ordered_elements(elements2)
@@ -1141,15 +1141,15 @@ def compare_two_ordered_comparable_elements(
         if wk_value2 == 53 or wk_value2 == 53:
             iso_available_years = YEARS_WITH_53_WEEKS
 
-        if compare_type == CompareSequnce.GRE:
+        if compare_type == CombinedSequnce.GRE:
             if compare_in_leap:
                 temp_years = [2024]
             else:
                 temp_years = [2023]
 
-        elif compare_type == CompareSequnce.ISO:
+        elif compare_type == CombinedSequnce.ISO:
             temp_years = list(iso_available_years) if iso_available_years else [2023]
-        elif compare_type == CompareSequnce.ISO_GRE:
+        elif compare_type == CombinedSequnce.ISO_GRE:
             if is_iso_elements1 and not is_iso_elements2:
                 if is_iso_greg_compare_consistent(
                     3, 2023, wk_value1, wy_value1,  # type: ignore

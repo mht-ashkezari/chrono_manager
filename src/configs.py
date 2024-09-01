@@ -64,10 +64,10 @@ class PointType(Enum):
         return self.value
 
 
-class CompareSequnce(Enum):
-    GRE = "iso"
-    ISO = "gre"
-    ISO_GRE = "iso_gre"
+class CombinedSequnce(Enum):
+    GRE = "CombinedSequence_GRE"
+    ISO = "combinedSequence_ISO"
+    ISO_GRE = "combinedSequence_ISO_GRE"
 
     def __str__(self):
         return self.value
