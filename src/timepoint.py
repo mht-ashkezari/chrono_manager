@@ -79,6 +79,22 @@ class TimePointOccurrenceError(TimePointError):
 class TimePoint:
 
     def __init__(self, telements: Union[List[TimeElement], str]) -> None:
+        """
+        Initializes a TimePoint object.
+
+        Args:
+            telements (Union[List[TimeElement], str]): The time elements used to
+            construct the TimePoint.
+                It can be either a list of TimeElement objects or a string
+                representation of the time elements.
+
+        Raises:
+            TimePointArgumentError: If there are missing units in the argument or no
+            valid elements found.
+
+        Returns:
+            None
+        """
         if isinstance(telements, str):
             elements = self._parse_elements_from_string(telements)
         else:
@@ -95,6 +111,22 @@ class TimePoint:
         self._initialize_time_point(sorted_elements)
 
     def _parse_elements_from_string(self, telements: str) -> List[TimeElement]:
+        """
+        Parses a string representation of time elements into a list of
+        TimeElement objects.
+
+        Args:
+            telements (str): The string containing the time elements.
+
+        Returns:
+            List[TimeElement]: A list of TimeElement objects parsed from the input
+                                string.
+
+        Raises:
+            TimePointArgumentError: If no valid elements are found or if there is an
+                                    unmatched substring.
+            TimePointCreationError: If there is an error in parsing the elements.
+        """
         try:
             elements, _, unmatched = TimeElement.parse_time_string_to_elements(
                 telements
@@ -113,6 +145,20 @@ class TimePoint:
         return elements
 
     def _initialize_time_point(self, elements: List[TimeElement]) -> None:
+        """
+        Initializes the TimePoint instance with the given list of TimeElement objects.
+
+        Args:
+            elements (List[TimeElement]): The list of TimeElement objects to initialize
+                                            the TimePoint with.
+
+        Raises:
+            TimePointCreationError: If there is an error in creating the TimePoint
+                                    instance.
+
+        Returns:
+            None
+        """
         try:
             is_ordered_elements(elements)
         except ValueError as e:
@@ -131,19 +177,45 @@ class TimePoint:
         self._initialize_time_units()
 
     def _find_units(self, unit_type: str) -> List[str]:
+        """
+        Finds and returns the units of the specified type ('O' for over units, 'U'
+                for under units).
+
+        Args:
+            unit_type (str): The type of units to find ('O' or 'U').
+
+        Returns:
+            List[str]: A list of units corresponding to the specified type.
+        """
+
         return find_ordered_elements_over_under_units(self._time_elements)[unit_type]
 
     def _initialize_time_units(self) -> None:
-        self._year = self._get_unit_value("YR")
-        self._month = self._get_unit_value("MH")
-        self._week = self._get_unit_value("WK")
-        self._weekday = self._get_unit_value("WY")
-        self._day = self._get_unit_value("DY")
-        self._hour = self._get_unit_value("HR")
-        self._minute = self._get_unit_value("ME")
-        self._second = self._get_unit_value("SD")
+        """
+        Initializes the various time units (year, month, day, etc.) for the TimePoint
+        instance.
+        """
 
-    def _get_unit_value(self, unit: str) -> Optional[int]:
+        self._year = self._init_unit_value_form_elements("YR")
+        self._month = self._init_unit_value_form_elements("MH")
+        self._week = self._init_unit_value_form_elements("WK")
+        self._weekday = self._init_unit_value_form_elements("WY")
+        self._day = self._init_unit_value_form_elements("DY")
+        self._hour = self._init_unit_value_form_elements("HR")
+        self._minute = self._init_unit_value_form_elements("ME")
+        self._second = self._init_unit_value_form_elements("SD")
+
+    def _init_unit_value_form_elements(self, unit: str) -> Optional[int]:
+        """
+        Retrieves the value for the specified time unit from the time elements.
+
+        Args:
+            unit (str): The unit code (e.g., 'YR' for year, 'MH' for month).
+
+        Returns:
+            Optional[int]: The value associated with the specified unit, or None if not
+                            applicable.
+        """
         return get_value_by_unit_from_elements(unit, self._time_elements)[0]
 
     def __str__(self) -> str:
@@ -165,6 +237,16 @@ class TimePoint:
         return hash(self.default_representation)
 
     def _get_unit_values(self, unit: str) -> Optional[int]:
+        """
+        Retrieves the value of the specified unit from the time elements.
+
+        Args:
+            unit (str): The unit to retrieve the value for.
+
+        Returns:
+            Optional[int]: The value of the specified unit, or None if the
+                            unit is not found.
+        """
         for element in self._time_elements:
             if element.element_unit == unit:
                 return element.element_value
@@ -313,6 +395,19 @@ class TimePoint:
     def _points_occurances_in_over_range(
         point: TimePoint, overs_starts: List[int], overs_ends: List[int]
     ) -> List[TimePoint]:
+        """
+        Generate a list of TimePoints that occur within the specified overs range.
+
+        Args:
+            point (TimePoint): The TimePoint to generate occurrences for.
+            overs_starts (List[int]): The start values of the overs range.
+            overs_ends (List[int]): The end values of the overs range.
+
+        Returns:
+            List[TimePoint]: A list of TimePoints that occur within the specified
+                            overs range.
+        """
+
         overs_length = min(len(overs_starts), len(overs_ends))
         point_over_units = point.over_units
         over_units = point_over_units[-overs_length:]
@@ -395,25 +490,35 @@ class TimePoint:
         point: "TimePoint", start: "TimePoint", end: "TimePoint"
     ) -> Optional[List["TimePoint"]]:
         """
-        Calculate the occurrences of a given time point within a specified period.
+        Return the list of  occurrences of a given point within a defined period.
 
         Args:
-            point (TimePoint): The time point to check for occurrences.
-            start (TimePoint): The start of the period.
-            end (TimePoint): The end of the period.
+            point (TimePoint): The time point for which occurrences are being
+                                determined within the period.
+            start (TimePoint): The starting time point of the period.
+            end (TimePoint): The ending time point of the period.
 
         Returns:
-            Optional[List[TimePoint]]: A list of time points that occur within the
-                                        specified period.
+            list: A list of occurrences of the point within the defined period.
 
         Raises:
-            TimePointOccurrenceError: If there are no overlapping units in the start or
-                                    end time points.
-            TimePointOccurrenceError: If there are not enough units in the start or end
-                                    time points.
-            TimePointOccurrenceError: If the start time point is greater than or equal
-                                    to the end time point.
+            TimePointOccurrenceError: If any of the following conditions are not met:
+                - All time points (start, end, and point) must belong to the same
+                    sequence.
+                - The required units for the `point` must be a subset of the common
+                    units between `start` and `end`.
+                - The values associated with the `start` time point must be less
+                    than those associated with the `end` time point.
         """
+
+        if (
+            start.sequence_name != end.sequence_name
+            or start.sequence_name != point.sequence_name
+            or end.sequence_name != point.sequence_name
+        ):
+            raise TimePointOccurrenceError(
+                "Start, end, and point time points must have the same sequence."
+            )
 
         common_units = set(start.units).intersection(end.units)
 
@@ -450,6 +555,15 @@ class TimePoint:
 
     @property
     def end_point_in_scope(self):
+        """
+        Returns the end point in the scope.
+
+        If the scope is None, the index is set to 0.
+        Otherwise, the index is determined by the position of the scope in the sequence_units list.
+
+        Returns:
+            TimePoint: The end point in the scope.
+        """
         if self._scope is None:
             index = 0
         else:
@@ -462,6 +576,15 @@ class TimePoint:
 
     @property
     def start_point_in_scope(self) -> TimePoint:
+        """
+        Returns the start point in the scope.
+
+        If the scope is None, the start point is at index 0.
+        Otherwise, the start point is determined by the index of the scope in the sequence units.
+
+        Returns:
+            TimePoint: The start point in the scope.
+        """
         if self._scope is None:
             index = 0
         else:
@@ -474,39 +597,91 @@ class TimePoint:
 
     @property
     def point_type(self) -> PointType:
+        """
+        Returns the point type of the timepoint.
+
+        :return: The point type of the timepoint.
+        :rtype: PointType
+        """
         return self._point_type
 
     @point_type.setter
     def point_type(self, value: PointType) -> None:
+        """
+        Set the point type of the timepoint.
+
+        Parameters:
+            value (PointType): The point type to be set.
+
+        Returns:
+            None
+        """
         self._point_type = value
 
     @property
     def values(self) -> list[int]:
+        """
+        Returns a list of integer values for each time element.
+
+        Returns:
+            list[int]: A list of integer values.
+        """
         return [el.element_value for el in self._time_elements]
 
     @property
-    def units_values(
-        self,
-    ) -> Dict[str, int]:
+    def units_values(self) -> Dict[str, int]:
+        """
+        Returns a dictionary mapping the unit names to their corresponding values.
+
+        Returns:
+            dict: A dictionary where the keys are the unit names and the values are the unit values.
+        """
+
         return {el.element_unit: el.element_value for el in self._time_elements}
 
     @property
     def units(self) -> list[str]:
+        """
+        Returns a list of units for each time element.
+
+        Returns:
+            list[str]: A list of units for each time element.
+        """
         return [el.element_unit for el in self._time_elements]
 
     @property
     def sequence_units(self) -> Tuple[str]:
+        """
+        Returns the sequence of time units in the timepoint.
+
+        :return: A tuple of strings representing the sequence of time units.
+        """
 
         return get_elements_sequence(self._time_elements)  # type: ignore
 
     @property
     def sequence_name(self) -> str:
+        """
+        Returns the name of the sequence associated with the TimeElement object.
+
+        Returns:
+            str: The name of the sequence.
+
+        Raises:
+            AssertionError: If the TimeElement object does not have a valid sequence.
+        """
         sequence_name = what_is_sequence(self._time_elements)
         assert sequence_name is not None  # a TimeElement object has a valid sequence
         return sequence_name
 
     @property
     def filled_timepoint_on_type(self) -> TimePoint:
+        """
+        Returns a TimePoint object based on the filled_on_type attribute.
+
+        :return: A TimePoint object.
+        :rtype: TimePoint
+        """
         values = [val if isinstance(val, int) else None for val in self.filled_on_type]
         values.append(self.is_iso)
         time_elms = units_vlaues_to_ordered_elements(*values)
@@ -514,6 +689,12 @@ class TimePoint:
 
     @property
     def available_years(self) -> Optional[list[int]]:
+        """
+        Returns a list of available years based on the current timepoint.
+
+        Returns:
+            Optional[list[int]]: A list of available years. If no years are available, returns None.
+        """
         available_years = None
         if self._is_iso and self._week == 53:
             available_years = list(YEARS_WITH_53_WEEKS)
@@ -523,6 +704,14 @@ class TimePoint:
 
     @property
     def start_filled(self) -> list[Union[str, int]]:
+        """
+        Returns a list of elements representing a filled timepoint.
+
+        The returned list includes the values of the over units, time elements, and start_array.
+
+        Returns:
+            list[Union[str, int]]: A list of elements representing a filled timepoint.
+        """
         start_array = [1, 1, 1, 0, 0, 0]
         filled: List[Union[str, int]] = []
         filled.extend(self._over_units)
@@ -532,6 +721,17 @@ class TimePoint:
 
     @property
     def end_filled(self) -> list[Union[str, int]]:
+        """
+        Returns a list of filled time elements representing the end point of a time
+            period.
+        The returned list includes the over units, time elements, and the remaining
+            elements
+        from the `end_array` if any.
+        Returns:
+            list [ Union [ str , int ] ]: A list of filled time elements representing
+                                            The end point.
+        """
+
         # if a point has only a year element, the point is gerogrian so the first under
         # unit is month if the has a week element, the point is iso so the first under
         # unit is weekday
@@ -544,82 +744,195 @@ class TimePoint:
 
     @property
     def start_point(self) -> TimePoint:
+        """
+        Returns the start point as a TimePoint object.
+
+        Returns:
+            TimePoint: The start point as a TimePoint object.
+        """
         vals = [v if isinstance(v, int) else None for v in self.start_filled]
         vals.append(self.is_iso)
         return TimePoint(units_vlaues_to_ordered_elements(*vals))
 
     @property
     def end_point(self) -> TimePoint:
+        """
+        Returns the end point of the time interval.
+
+        :return: The end point of the time interval.
+        :rtype: TimePoint
+        """
         vals = [v if isinstance(v, int) else None for v in self.end_filled]
         vals.append(self.is_iso)
         return TimePoint(units_vlaues_to_ordered_elements(*vals))
 
     @property
     def filled_on_type(self) -> list[Union[str, int]]:
+        """
+        Returns the filled list based on the point type.
+
+        :return: The filled list based on the point type.
+        :rtype: list[Union[str, int]]
+        """
         return (
             self.start_filled if self.point_type == PointType.START else self.end_filled
         )
 
     @property
     def default_representation(self) -> str:
+        """
+        Returns the default representation of the timepoint.
+
+        :return: A string representing the default representation of the timepoint.
+        :rtype: str
+        """
         return "".join([el.default_representation for el in self._time_elements])
 
     @property
     def alternative_representation(self) -> str:
+        """
+        Returns an alternative representation of the timepoint.
+
+        :return: A string representing the alternative representation of the timepoint.
+        :rtype: str
+        """
         return "".join([el.alternative_representation for el in self._time_elements])
 
     @property
     def time_elements(self) -> list[TimeElement]:
+        """
+        Returns the list of time elements.
+
+        :return: A list of TimeElement objects.
+        :rtype: list[TimeElement]
+        """
         return self._time_elements
 
     @property
     def is_iso(self) -> bool:
+        """
+        Returns a boolean value indicating whether the timepoint is in ISO format.
+
+        :return: True if the timepoint is in ISO format, False otherwise.
+        :rtype: bool
+        """
         return self._is_iso
 
     @property
     def is_leap(self) -> bool:
+        """
+        Returns a boolean value indicating whether the timepoint represents a leap year.
+
+        :return: True if the timepoint is a leap year, False otherwise.
+        :rtype: bool
+        """
         return self._is_leap
 
     @property
     def scope(self) -> Optional[str]:
+        """
+        Returns the scope of the timepoint.
+
+        :return: The scope of the timepoint.
+        :rtype: Optional[str]
+        """
         return self._scope
 
     @property
     def over_units(self) -> list[str]:
+        """
+        Returns the list of units that the timepoint is over.
+
+        :return: A list of strings representing the units.
+        :rtype: list[str]
+        """
         return self._over_units
 
     @property
     def under_units(self) -> list[str]:
+        """
+        Returns the list of units that are considered "under" the current timepoint.
+
+        :return: A list of strings representing the units.
+        :rtype: list[str]
+        """
         return self._under_units
 
     @property
     def year(self) -> Optional[int]:
+        """
+        Returns the year of the timepoint.
+
+        :return: The year of the timepoint, or None if not set.
+        :rtype: Optional[int]
+        """
         return self._year
 
     @property
     def month(self) -> Optional[int]:
+        """
+        Returns the month of the timepoint.
+
+        :return: The month of the timepoint, or None if not set.
+        :rtype: Optional[int]ّ
+        """
         return self._month
 
     @property
     def week(self) -> Optional[int]:
+        """
+        Returns the week of the timepoint.
+
+        :return: The week of the timepoint.
+        :rtype: Optional[int]
+        """
         return self._week
 
     @property
     def day(self) -> Optional[int]:
+        """
+        Returns the day of the timepoint.
+
+        :return: An optional integer representing the day of the timepoint.
+        """
         return self._day
 
     @property
     def weekday(self) -> Optional[int]:
+        """
+        Returns the weekday of the timepoint.
+
+        :return: An integer representing the weekday of the timepoint.
+                Returns None if the weekday is not set.
+        """
         return self._weekday
 
     @property
     def hour(self) -> Optional[int]:
+        """
+        Returns the hour of the timepoint.
+
+        :return: An integer representing the hour of the timepoint.
+        :rtype: Optional[int]
+        """
         return self._hour
 
     @property
     def minute(self) -> Optional[int]:
+        """
+        Returns the minute value of the timepoint.
+
+        :return: The minute value of the timepoint, or None if not set.
+        :rtype: Optional[int]
+        """
         return self._minute
 
     @property
     def second(self) -> Optional[int]:
+        """
+        Returns the second value of the timepoint.
+
+        Returns:
+            Optional[int]: The second value of the timepoint.
+        """
         return self._second
