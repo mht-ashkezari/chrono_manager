@@ -410,6 +410,7 @@ class TimeElement:
                 unit_alt_pattern = cast(str, unit_info["alternative_pattern"])
                 unit_def_pattern = cast(str, unit_info["default_pattern"])
                 unit_pattern = f"({unit_def_pattern}|{unit_alt_pattern})"
+
                 # Try to match with default pattern
                 # fmt: off
                 default_match = re.match(

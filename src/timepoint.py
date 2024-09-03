@@ -559,7 +559,8 @@ class TimePoint:
         Returns the end point in the scope.
 
         If the scope is None, the index is set to 0.
-        Otherwise, the index is determined by the position of the scope in the sequence_units list.
+        Otherwise, the index is determined by the position of the scope in the
+            sequence_units list.
 
         Returns:
             TimePoint: The end point in the scope.
@@ -580,7 +581,8 @@ class TimePoint:
         Returns the start point in the scope.
 
         If the scope is None, the start point is at index 0.
-        Otherwise, the start point is determined by the index of the scope in the sequence units.
+        Otherwise, the start point is determined by the index of the scope in
+            the sequence units.
 
         Returns:
             TimePoint: The start point in the scope.
