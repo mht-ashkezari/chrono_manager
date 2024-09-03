@@ -204,139 +204,81 @@ class TimeSpan:
     @staticmethod
     def parse_time_span_string(span_str: str) -> dict:
         func_name = TimeSpan.parse_time_span_string.__name__
-        if not span_str:
-            raise TimeSpanStringError(f"{func_name}: TimeSpan string cannot be empty")
 
-        # Split the string by the underscore, identifying start and end components
-        if "_" not in span_str:
-            if not span_str or span_str.isspace():
-                raise TimeSpanStringError(
-                    f"{func_name}: TimeSpan string cannot be empty or whitespace"
-                )
-            if span_str.startswith("@") and span_str.endswith("@"):
-                try:
-                    start_timepoint = TimePoint(span_str[1:-1])
-                except TimePointArgumentError as e:
-                    raise TimeSpanStringError(
-                        f"{func_name}:" f"TimePoint instance is not created: {e}"
-                    ) from e
-                else:
-                    return {
-                        "start": start_timepoint,
-                        "start_edge": EdgeType.START,
-                        "end": None,
-                        "end_edge": None,
-                        "span_type": SpanType.BETWEEN,
-                    }
-            else:
-                raise TimeSpanStringError(
-                    f"{func_name}: "
-                    "TimeSpan string without '_' must start and end with @"
-                )
-        else:
-            parts = span_str.split("_")
-
-            # Determine the start and end strings, and whether they exist
-            start_str = parts[0] if parts[0] else None
-            end_str = parts[1] if len(parts) > 1 else None
-
-            span_type: SpanType
-            # Determine the SpanType
-            if start_str and end_str and not (start_str.isspace() or end_str.isspace()):
-                span_type = SpanType.BETWEEN
-            elif start_str and not start_str.isspace():
-                span_type = SpanType.BEFORE
-            elif end_str and not end_str.isspace():
-                span_type = SpanType.AFTER
-            else:
-                raise TimeSpanStringError(
-                    f"{func_name}: TimeSpan type check: string with start :"
-                    f"'{start_str}' and end '{end_str}'"
-                    f" components is not valid for type ''{span_type}' "
-                )
-            # Determine start_edge
-            start_at_sign_begin = (
-                True
-                if start_str and start_str.startswith("@")
-                else False if start_str and start_str.endswith("@") else None
+        if not span_str or span_str.isspace():
+            raise TimeSpanStringError(
+                f"{func_name}: TimeSpan string cannot be empty or whitespace"
             )
 
-            end_at_sign_begin = (
-                True
-                if end_str and end_str.startswith("@")
-                else False if end_str and end_str.endswith("@") else None
-            )
-            print(
-                f"start_at_sign_begin: {start_at_sign_begin}, end_at_sign_begin: {end_at_sign_begin}"
-            )
-            print("span_type:", span_type)
-            if end_at_sign_begin is None and start_at_sign_begin is None:
-                raise TimeSpanStringError(f"{func_name}: TimeSpan string must have '@'")
-
-            if (
-                span_type == SpanType.BETWEEN
-                and end_at_sign_begin is not None
-                and start_at_sign_begin is not None
-            ):
-                if start_at_sign_begin:
-                    start_edge = EdgeType.START
-                    start_str = start_str.lstrip("@")  # Remove the leading '@'
-                else:
-                    start_edge = EdgeType.END
-                    start_str = start_str.rstrip("@")  # Remove the trailing '@'
-                if end_at_sign_begin:
-                    end_edge = EdgeType.START
-                    end_str = end_str.lstrip("@")
-                else:
-                    end_edge = EdgeType.END
-                    end_str = end_str.rstrip("@")
-
-            elif span_type == SpanType.AFTER and end_at_sign_begin is not None:
-                if end_at_sign_begin:
-                    start_edge = EdgeType.START
-                    start_str = end_str.lstrip("@")
-                else:
-                    start_edge = EdgeType.END
-                    start_str = end_str.rstrip("@")
-
-                end_str = ""
-                end_edge = None
-
-            elif span_type == SpanType.BEFORE and start_at_sign_begin is not None:
-
-                if end_at_sign_begin:
-                    start_edge = EdgeType.START
-                    start_str = end_str.lstrip("@")
-                else:
-                    start_edge = EdgeType.END
-                    start_str = end_str.rstrip("@")
-
-                end_edge = None
-                end_str = ""
-
-            else:
-                raise TimeSpanStringError(
-                    f"{func_name}: TimeSpan string with start :"
-                    f" '{start_str}' and end '{end_str}'"
-                    f" components is not valid for type ''{span_type}' "
-                )
-
+        # Helper function to create TimePoint safely
+        def create_timepoint(tp_str: str) -> TimePoint:
             try:
-                start_timepoint = TimePoint(start_str) if start_str else None
-                end_timepoint = TimePoint(end_str) if end_str else None
+                return TimePoint(tp_str)
             except TimePointArgumentError as e:
                 raise TimeSpanStringError(
-                    f"{func_name}:TimePoint instance is not created {e}"
+                    f"{func_name}: TimePoint creation failed: {e}"
                 ) from e
-            else:
-                # Return the parsed arguments as a dictionary
+
+        # Handle single timepoint cases (without '_')
+        if "_" not in span_str:
+            if span_str.startswith("@") and span_str.endswith("@"):
+                start_timepoint = create_timepoint(span_str[1:-1])
                 return {
                     "start": start_timepoint,
-                    "start_edge": start_edge,
-                    "end": end_timepoint,
-                    "end_edge": end_edge,
-                    "span_type": span_type,
+                    "start_edge": EdgeType.START,
+                    "end": None,
+                    "end_edge": None,
+                    "span_type": SpanType.BETWEEN,
                 }
+            else:
+                raise TimeSpanStringError(
+                    f"{func_name}: TimeSpan string must start and end with '@'"
+                )
+
+        # Handle cases with start and end components
+        start_str, end_str = (part.strip() for part in span_str.split("_", 1))
+
+        if not start_str and not end_str:
+            raise TimeSpanStringError(
+                f"{func_name}: Invalid TimeSpan string with no components"
+            )
+
+        span_type = (
+            SpanType.BETWEEN
+            if start_str and end_str
+            else SpanType.BEFORE if start_str else SpanType.AFTER
+        )
+
+        def determine_edge_type(tp_str: str, is_start: bool) -> (str, EdgeType):
+            if tp_str.startswith("@"):
+                return tp_str[1:], EdgeType.START
+            elif tp_str.endswith("@"):
+                return tp_str[:-1], EdgeType.END
+            else:
+                raise TimeSpanStringError(
+                    f"{func_name}: Missing '@' in the {'start' if is_start else 'end'} component"
+                )
+
+        if span_type == SpanType.BETWEEN:
+            start_str, start_edge = determine_edge_type(start_str, True)
+            end_str, end_edge = determine_edge_type(end_str, False)
+        elif span_type == SpanType.BEFORE:
+            start_str, start_edge = determine_edge_type(start_str, True)
+            end_edge, end_str = None, None
+        elif span_type == SpanType.AFTER:
+            end_str, start_edge = determine_edge_type(end_str, False)
+            start_str, end_edge = end_str, None
+
+        start_timepoint = create_timepoint(start_str) if start_str else None
+        end_timepoint = create_timepoint(end_str) if end_str else None
+
+        return {
+            "start": start_timepoint,
+            "start_edge": start_edge,
+            "end": end_timepoint,
+            "end_edge": end_edge,
+            "span_type": span_type,
+        }
 
     @staticmethod
     def occurrences_in_period(
