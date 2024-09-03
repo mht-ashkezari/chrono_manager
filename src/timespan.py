@@ -11,7 +11,7 @@ from .timepoint import (
     TimePointOccurrenceError,
 )
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from .utilityfuncs import find_intersection
 
@@ -46,12 +46,24 @@ class TimeSpanStringError(Exception):
 class TimeSpan:
     def __init__(
         self,
-        start: TimePoint,
-        start_edge: EdgeType,
+        start: Union[TimePoint, str],
+        start_edge: Optional[EdgeType],
         end: Optional[TimePoint] = None,
         end_edge: Optional[EdgeType] = None,
         span_type: SpanType = SpanType.BETWEEN,
     ):
+        if isinstance(start, str):
+            try:
+                prsed_arguments = TimeSpan.parse_time_span_string(start)
+
+            except TimePointArgumentError as e:
+                raise TimeSpanCreateArgumentError(e) from e
+            else:
+                start = prsed_arguments["start"]
+                start_edge = prsed_arguments["start_edge"]
+                end = prsed_arguments["end"]
+                end_edge = prsed_arguments["end_edge"]
+                span_type = prsed_arguments["span_type"]
         self._init_start = start
         self._init_end = end
 
@@ -203,6 +215,24 @@ class TimeSpan:
 
     @staticmethod
     def parse_time_span_string(span_str: str) -> dict:
+        """
+        Parses a time span string and returns a dictionary representing the time span.
+
+        Args:
+            span_str (str): The time span string to parse.
+
+        Returns:
+            dict: A dictionary representing the parsed time span with the following keys:
+                - "start" (TimePoint): The start time point of the time span.
+                - "start_edge" (EdgeType): The edge type of the start time point.
+                - "end" (TimePoint): The end time point of the time span.
+                - "end_edge" (EdgeType): The edge type of the end time point.
+                - "span_type" (SpanType): The type of the time span.
+
+        Raises:
+            TimeSpanStringError: If the time span string is empty or whitespace, or if it is not formatted correctly.
+
+        """
         func_name = TimeSpan.parse_time_span_string.__name__
 
         if not span_str or span_str.isspace():
