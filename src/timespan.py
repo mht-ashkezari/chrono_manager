@@ -52,18 +52,51 @@ class TimeSpan:
         end_edge: Optional[EdgeType] = None,
         span_type: SpanType = SpanType.BETWEEN,
     ):
+        """
+        Initialize a TimeSpan object.
+
+        Args:
+            start (Union[TimePoint, str]): The start time point or a string representation of the time span.
+            start_edge (Optional[EdgeType]): The edge type for the start time point.
+            end (Optional[TimePoint]): The end time point.
+            end_edge (Optional[EdgeType]): The edge type for the end time point.
+            span_type (SpanType): The type of time span.
+
+        Raises:
+            TimeSpanCreateArgumentError: If there is an error in creating the TimeSpan object.
+
+        Notes:
+
+            - SpanType sepcifies the type of the time span. It can be one of the following:
+                - SpanType.BETWEEN: The time span is between two time points.
+                - SpanType.AFTER: The time span is after a time point.
+                - SpanType.BEFORE: The time span is before a time point.
+            _EdgeType specifies the edge type of the time point. It can be one of the following:
+                - EdgeType.START: The time point under units are set to the values of the start.
+                    for exapmple for point consist on month and day with the EdgeType.START, its
+                    under units (hour,minute,second) are set to 0.
+                - EdgeType.END: The time point under units are set to the values of the end.
+                    for exapmple for point consist on month and day with the EdgeType.END, its
+                    under units (hour,minute,second) are set to 23:59:39.
+            - If `start` is a string, it is parsed to create the TimeSpan object.
+            - If `start` is a TimePoint object, the TimeSpan object is created using the provided arguments.
+
+        """
+
+        func_name = TimeSpan.__init__.__name__
         if isinstance(start, str):
             try:
                 prsed_arguments = TimeSpan.parse_time_span_string(start)
 
-            except TimePointArgumentError as e:
-                raise TimeSpanCreateArgumentError(e) from e
+            except TimeSpanStringError as e:
+                raise TimeSpanCreateArgumentError(f" {func_name} : {e}") from e
             else:
                 start = prsed_arguments["start"]
                 start_edge = prsed_arguments["start_edge"]
                 end = prsed_arguments["end"]
                 end_edge = prsed_arguments["end_edge"]
                 span_type = prsed_arguments["span_type"]
+
         self._init_start = start
         self._init_end = end
 
@@ -158,60 +191,6 @@ class TimeSpan:
                 raise TimeSpanCreateArgumentError(
                     "No span exists between start and end"
                 )
-
-    def __str__(self) -> str:
-        return (
-            f"start = {self._start}, start_edge ={ self._start_edge},"
-            f" end = {self._end}, end_edge = {self._end_edge}, "
-            f"span_type = {self._type}"
-        )
-
-    def __repr__(self) -> str:
-        return f"TimeSpan({self.__str__()})"
-
-    @property
-    def start(self) -> TimePoint:
-        return self._start
-
-    @property
-    def end(self) -> TimePoint:
-        return self._end
-
-    @property
-    def start_edge(self) -> EdgeType:
-        return self._start_edge
-
-    @property
-    def end_edge(self) -> EdgeType:
-        return self._end_edge
-
-    @property
-    def init_start(self) -> TimePoint:
-        return self._init_start
-
-    @property
-    def init_end(self) -> Optional[TimePoint]:
-        return self._init_end
-
-    @property
-    def type(self) -> SpanType:
-        return self._type
-
-    @property
-    def sequence_combination(self) -> CombinedSequnce:
-        return self._sequence_combination
-
-    @property
-    def is_leap(self) -> bool:
-        return self._is_leap
-
-    @property
-    def scope(self) -> Optional[str]:
-        return self._scope
-
-    @property
-    def available_years(self) -> Optional[List[int]]:
-        return self._available_years
 
     @staticmethod
     def parse_time_span_string(span_str: str) -> dict:
@@ -310,10 +289,149 @@ class TimeSpan:
             "span_type": span_type,
         }
 
+    def __str__(self) -> str:
+        return (
+            f"start = {self._start}, start_edge ={ self._start_edge},"
+            f" end = {self._end}, end_edge = {self._end_edge}, "
+            f"span_type = {self._type}"
+        )
+
+    def __repr__(self) -> str:
+        return f"TimeSpan({self.__str__()})"
+
+    @property
+    def start(self) -> TimePoint:
+        """
+        Returns the start point of the timespan.
+
+        :return: The start point of the timespan.
+        :rtype: TimePoint
+        """
+        return self._start
+
+    @property
+    def end(self) -> TimePoint:
+        """
+        Returns the end time of the timespan.
+
+        :return: The end time of the timespan.
+        :rtype: TimePoint
+        """
+        return self._end
+
+    @property
+    def start_edge(self) -> EdgeType:
+        """
+        Returns the edge of the timespan's start point.
+
+        :return: The edge of the timespan's start point.
+        :rtype: EdgeType
+        """
+        return self._start_edge
+
+    @property
+    def end_edge(self) -> EdgeType:
+        """
+        Returns the edge of the timespan's end point.
+
+        :return: The edge of the timespan's end point.
+        :rtype: EdgeType
+        """
+        return self._end_edge
+
+    @property
+    def init_start(self) -> TimePoint:
+        """
+        Returns the initial value of start point passed as an argument.
+
+        :return: The initial value of start point passed as an argument.
+        :rtype: TimePoint
+        """
+        return self._init_start
+
+    @property
+    def init_end(self) -> Optional[TimePoint]:
+        """
+        Returns the initial value of end point passed as an argument.
+
+        :return: The initial value of end point passed as an argument.
+        :rtype: Optional[TimePoint]
+        """
+        return self._init_end
+
+    @property
+    def type(self) -> SpanType:
+        """
+        Returns the type of the timespan.
+
+        :return: The type of the timespan.
+        :rtype: SpanType
+        """
+        return self._type
+
+    @property
+    def sequence_combination(self) -> CombinedSequnce:
+        """
+        Returns the combined sequence of the timespan.
+
+        :return: The combined sequence of the timespan.
+        :rtype: CombinedSequnce
+        """
+        return self._sequence_combination
+
+    @property
+    def is_leap(self) -> bool:
+        """
+        Returns a boolean value indicating whether the timespan is in a leap year.
+
+        :return: True if the timespan is in a leap year, False otherwise.
+        :rtype: bool
+        """
+        return self._is_leap
+
+    @property
+    def scope(self) -> Optional[str]:
+        """
+        Returns the unit scope of the timespan.
+
+        :return: The scope of the timespan.
+        :rtype: Optional[str]
+        """
+        return self._scope
+
+    @property
+    def available_years(self) -> Optional[List[int]]:
+        """
+        Returns the list of the years the timespan is available in.
+        None if the timespan is available in all years.
+
+        :return: The list of the years the timespan is available in.
+        :rtype: Optional[List[int]]
+        """
+        return self._available_years
+
     @staticmethod
     def occurrences_in_period(
         time_span: TimeSpan, period_start: TimePoint, period_end: TimePoint
     ) -> Optional[List[TimeSpan]]:
+        """
+        Calculate the occurrences of a given time span within a specified period.
+
+        Args:
+            time_span (TimeSpan): The time span to calculate occurrences for.
+            period_start (TimePoint): The start of the period.
+            period_end (TimePoint): The end of the period.
+
+        Returns:
+            Optional[List[TimeSpan]]: A list of time spans representing the occurrences within the period.
+            Returns None if there are no occurrences.
+
+        Raises:
+            TimeSpanOccurrenceError: If the time_span is not of type BETWEEN.
+            TimePointOccurrenceError: If there is an error calculating the occurrences of the start or end time points.
+
+        """
+
         if time_span.type != SpanType.BETWEEN:
             raise TimeSpanOccurrenceError("time_span must be of type BETWEEN")
 
@@ -365,6 +483,21 @@ class TimeSpan:
     def occurrences_in_sapn(
         contained_span: TimeSpan, container_span: TimeSpan
     ) -> Optional[List[TimeSpan]]:
+        """
+        Calculates the occurrences of a contained time span within a container time span.
+
+        Args:
+            contained_span (TimeSpan): The time span to be checked for occurrences.
+            container_span (TimeSpan): The time span within which occurrences are checked.
+
+        Returns:
+            Optional[List[TimeSpan]]: A list of time spans representing the occurrences of the contained span within the container span.
+                                        Returns None if no occurrences are found.
+
+        Raises:
+            TimeSpanOccurrenceError: If an error occurs while calculating the occurrences.
+
+        """
 
         try:
             return TimeSpan.occurrences_in_period(
@@ -422,6 +555,21 @@ class TimeSpan:
     def is_contained_in_span(
         contained_span: TimeSpan, container_span: TimeSpan
     ) -> Optional[SpanContain]:
+        """
+        Determines if the `contained_span` is fully contained within the `container_span`.
+
+        Args:
+            contained_span (TimeSpan): The TimeSpan to check if it is contained within the container_span.
+            container_span (TimeSpan): The TimeSpan that potentially contains the contained_span.
+
+        Returns:
+            Optional[SpanContain]: The result of the containment check. It can be one of the following:
+                - SpanContain.CONTAINED: If the `contained_span` is fully contained within the `container_span`.
+                - SpanContain.STARTS_BEFORE: If the `contained_span` starts before the `container_span` but ends within it.
+                - SpanContain.ENDS_AFTER: If the `contained_span` starts within the `container_span` but ends after it.
+                - SpanContain.NOT_CONTAINED: If the `contained_span` is not contained within the `container_span`.
+        """
+
         try:
             return TimeSpan.is_contained_in_preiod(
                 contained_span, container_span.start, container_span.end

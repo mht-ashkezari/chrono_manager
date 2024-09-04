@@ -7,6 +7,7 @@ from enum import Enum
 
 IntList = Union[int, List["IntList"]]
 
+# Represents the end of the scopes of the time elements in the GRE calendar
 END_SCOPE_ELEMENTS_GRE: Tuple[TimeElement, ...] = (
     TimeElement("YR", END_YEAR),
     TimeElement("MH", 12),
@@ -15,6 +16,8 @@ END_SCOPE_ELEMENTS_GRE: Tuple[TimeElement, ...] = (
     TimeElement("ME", 59),
     TimeElement("SD", 59),
 )
+
+# Represents the end of the scopes of the time elements in the ISO calendar
 END_SCOPE_ELEMENTS_ISO: Tuple[TimeElement, ...] = (
     TimeElement("YR", END_YEAR),
     TimeElement("WK", 53),
@@ -23,6 +26,8 @@ END_SCOPE_ELEMENTS_ISO: Tuple[TimeElement, ...] = (
     TimeElement("ME", 59),
     TimeElement("SD", 59),
 )
+
+# Represents the start of the scopes of the time elements in the GRE calendar
 START_SCOPE_ELEMENTS_GRE: Tuple[TimeElement, ...] = (
     TimeElement("YR", START_YEAR),
     TimeElement("MH", 1),
@@ -31,6 +36,8 @@ START_SCOPE_ELEMENTS_GRE: Tuple[TimeElement, ...] = (
     TimeElement("ME", 0),
     TimeElement("SD", 0),
 )
+
+# Represents the start of the scopes of the time elements in the ISO calendar
 START_SCOPE_ELEMENTS_ISO: Tuple[TimeElement, ...] = (
     TimeElement("YR", START_YEAR),
     TimeElement("WK", 1),
@@ -50,12 +57,14 @@ def years_with_53_weeks(start_year: int, end_year: int) -> frozenset[int]:
     return frozenset(years)
 
 
+# Years with 53 weeks in the ISO calendar
 YEARS_WITH_53_WEEKS: frozenset[int] = years_with_53_weeks(START_YEAR, END_YEAR)
 
 
+#
 class PointType(Enum):
-    START = "start"
-    END = "end"
+    START = "PointType.START"
+    END = "PointType.END"
 
     def __str__(self):
         return self.value
@@ -64,6 +73,7 @@ class PointType(Enum):
         return self.value
 
 
+# Represents the different types of sequences combined
 class CombinedSequnce(Enum):
     GRE = "CombinedSequence_GRE"
     ISO = "combinedSequence_ISO"
