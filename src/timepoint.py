@@ -566,13 +566,13 @@ class TimePoint:
             TimePoint: The end point in the scope.
         """
         if self._scope is None:
-            index = 0
+            index = -1
         else:
             index = self.sequence_units.index(self._scope)
         return (
-            TimePoint(list(END_SCOPE_ELEMENTS_ISO[index:]))
+            TimePoint(list(END_SCOPE_ELEMENTS_ISO[index + 1 :]))
             if self.sequence_name == "iso"
-            else TimePoint(list(END_SCOPE_ELEMENTS_GRE[index:]))
+            else TimePoint(list(END_SCOPE_ELEMENTS_GRE[index + 1 :]))
         )
 
     @property
@@ -588,13 +588,13 @@ class TimePoint:
             TimePoint: The start point in the scope.
         """
         if self._scope is None:
-            index = 0
+            index = -1
         else:
             index = self.sequence_units.index(self._scope)
         return (
-            TimePoint(list(START_SCOPE_ELEMENTS_ISO[index:]))
+            TimePoint(list(START_SCOPE_ELEMENTS_ISO[index + 1 :]))
             if self.sequence_name == "iso"
-            else TimePoint(list(START_SCOPE_ELEMENTS_GRE[index:]))
+            else TimePoint(list(START_SCOPE_ELEMENTS_GRE[index + 1 :]))
         )
 
     @property
@@ -803,7 +803,7 @@ class TimePoint:
     @property
     def time_elements(self) -> list[TimeElement]:
         """
-        Returns the list of time elements.
+        Returns the list of time elements creating the timepoint.
 
         :return: A list of TimeElement objects.
         :rtype: list[TimeElement]
@@ -823,7 +823,7 @@ class TimePoint:
     @property
     def is_leap(self) -> bool:
         """
-        Returns a boolean value indicating whether the timepoint represents a leap year.
+        Returns a boolean value indicating whether the timepoint is in a leap year.
 
         :return: True if the timepoint is a leap year, False otherwise.
         :rtype: bool
@@ -835,8 +835,18 @@ class TimePoint:
         """
         Returns the scope of the timepoint.
 
+        -The scope is the adjacent over unit in which the timepoint is located.
+
+        For example:
+
+        _ if the timepoint is in the month scope, the scope is year.
+
+        _ if the timepoint is in the day scope, the scope is month and so on.
+
         :return: The scope of the timepoint.
+
         :rtype: Optional[str]
+
         """
         return self._scope
 

@@ -11,7 +11,7 @@ from .timepoint import (
     TimePointOccurrenceError,
 )
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from .utilityfuncs import find_intersection
 
@@ -47,7 +47,7 @@ class TimeSpan:
     def __init__(
         self,
         start: Union[TimePoint, str],
-        start_edge: Optional[EdgeType],
+        start_edge: Optional[EdgeType] = None,
         end: Optional[TimePoint] = None,
         end_edge: Optional[EdgeType] = None,
         span_type: SpanType = SpanType.BETWEEN,
@@ -258,7 +258,7 @@ class TimeSpan:
             else SpanType.BEFORE if start_str else SpanType.AFTER
         )
 
-        def determine_edge_type(tp_str: str, is_start: bool) -> (str, EdgeType):
+        def determine_edge_type(tp_str: str, is_start: bool) -> Tuple[str, EdgeType]:
             if tp_str.startswith("@"):
                 return tp_str[1:], EdgeType.START
             elif tp_str.endswith("@"):
@@ -275,8 +275,8 @@ class TimeSpan:
             start_str, start_edge = determine_edge_type(start_str, True)
             end_edge, end_str = None, None
         elif span_type == SpanType.AFTER:
-            end_str, start_edge = determine_edge_type(end_str, False)
-            start_str, end_edge = end_str, None
+            start_str, start_edge = determine_edge_type(end_str, False)
+            end_str, end_edge = None, None
 
         start_timepoint = create_timepoint(start_str) if start_str else None
         end_timepoint = create_timepoint(end_str) if end_str else None
@@ -409,6 +409,26 @@ class TimeSpan:
         :rtype: Optional[List[int]]
         """
         return self._available_years
+
+    @property
+    def default_represenantion(self) -> str:
+        """
+        Returns the default representation of the timespan.
+
+        :return: The default representation of the timespan.
+        :rtype: str
+        """
+        return self.time_span_to_span_string(self, True)
+
+    @property
+    def alternative_represenantion(self) -> str:
+        """
+        Returns the alternative representation of the timespan.
+
+        :return: The alternative representation of the timespan.
+        :rtype: str
+        """
+        return self.time_span_to_span_string(self, False)
 
     @staticmethod
     def occurrences_in_period(
@@ -576,3 +596,55 @@ class TimeSpan:
             )
         except TimeSpanOccurrenceError as e:
             raise TimeSpanOccurrenceError(e) from e
+
+    @staticmethod
+    def time_span_to_span_string(time_span: TimeSpan, is_default_repr: bool) -> str:
+        """
+        Convert a TimeSpan object to a string representation.
+
+        Args:
+            time_span (TimeSpan): The TimeSpan object to convert to a string.
+            is_default_repr (bool): A boolean value indicating whether to use the default representation.
+
+        Returns:
+            str: The string representation of the TimeSpan object.
+
+        Raises:
+            TimeSpanStringError: If there is an error in converting the TimeSpan object to a string.
+        """
+
+        def get_representation(edge, start=True):
+            """Helper to get the correct representation for start or end."""
+            return (
+                time_span.init_start.default_representation
+                if is_default_repr
+                else (
+                    time_span.init_start.alternative_representation
+                    if start
+                    else (
+                        time_span.init_end.default_representation
+                        if is_default_repr
+                        else time_span.init_end.alternative_representation
+                    )
+                )
+            )
+
+        def set_edge_marker(edge_type, init_str):
+            """Helper to get the marker based on edge type and position."""
+            return f"@{init_str}" if edge_type == EdgeType.START else f"{init_str}@"
+
+        if time_span.init_end is None:
+            if time_span.type == SpanType.BETWEEN:
+                return f"@{get_representation(time_span.init_start,True)}@"
+            elif time_span.type == SpanType.AFTER:
+                return f"_{set_edge_marker(time_span.start_edge, get_representation(time_span.init_end))}"
+            elif time_span.type == SpanType.BEFORE:
+                return f"{set_edge_marker(time_span.start_edge, get_representation(time_span.init_start))}_"
+        else:
+            start_repr = get_representation(time_span.init_start)
+            end_repr = get_representation(time_span.init_end, start=False)
+            start_with_marker = set_edge_marker(time_span.start_edge, start_repr)
+            end_with_marker = set_edge_marker(time_span.end_edge, end_repr)
+            return f"{start_with_marker}_{end_with_marker}"
+
+        raise TimeSpanStringError("Invalid TimeSpan configuration")
