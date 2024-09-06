@@ -90,7 +90,7 @@ def test_comparison_with_different_units():
 # Test __str__ Method
 def test_str_method():
     time_element = TimeElement("YR", 2024)
-    assert str(time_element) == "YR=2024"
+    assert str(time_element) == "E(YR=2024)"
 
 
 # Test __repr__ Method

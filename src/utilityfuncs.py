@@ -32,9 +32,12 @@ def days_to_year_start_gregorian(year: int, month: int, day: Union[str, int, Non
     # Gregorian date
     if day is None or isinstance(day, str):
         day = 1
+    print(f"year: {year}, month: {month}, day: {day}")
     gregorian_date = datetime(year, month, day)
+    print("gregorian_date: ", gregorian_date)
     # Calculate difference from year start
     year_start = datetime(year, 1, 1)
+    print("year_start: ", year_start)
     return (gregorian_date - year_start).days
 
 
@@ -47,10 +50,13 @@ def is_iso_greg_compare_consistent(
     month: int,
     day: Union[str, int, None],
 ) -> bool:
-
+    print("entrance: is_iso_greg_compare_consistent")
     iso_days = days_to_year_start_iso(iso_year, iso_week, iso_weekday)
+    print("iso_days: ", iso_days)
     gregorian_days = days_to_year_start_gregorian(year, month, day)
+    print("gregorian_days: ", gregorian_days)
     difference = abs(iso_days - gregorian_days)
+    print("difference: ", difference)
     if difference > treshold:
         # Consistent comparison across alll years
         return True
@@ -1095,11 +1101,13 @@ def compare_two_ordered_comparable_elements(
     func_name = compare_two_ordered_comparable_elements.__name__
 
     try:
+
         _ = are_ordered_elements_comparable(elements1, elements2)
     except ValueError as e:
         raise ValueError(f"{func_name}:arguments elements1 and elements2:{e}")
 
     else:
+        
         is_leap_element1 = (True if (
             is_elements_leap(elements1)) else False)
         is_leap_element2 = (True if (
@@ -1138,6 +1146,7 @@ def compare_two_ordered_comparable_elements(
         wy_value1 = get_value_by_unit_from_elements("WY", elements1)[0]
         wk_value2 = get_value_by_unit_from_elements("WK", elements2)[0]
         wy_value2 = get_value_by_unit_from_elements("WY", elements2)[0]
+
         if wk_value2 == 53 or wk_value2 == 53:
             iso_available_years = YEARS_WITH_53_WEEKS
 
@@ -1146,35 +1155,42 @@ def compare_two_ordered_comparable_elements(
                 temp_years = [2024]
             else:
                 temp_years = [2023]
-
         elif compare_type == CombinedSequnce.ISO:
             temp_years = list(iso_available_years) if iso_available_years else [2023]
         elif compare_type == CombinedSequnce.ISO_GRE:
+            iso_gre_year = 2020 if compare_in_leap else 2026
+            print(f"iso1: {is_iso_elements1}, iso2: {is_iso_elements2}")
             if is_iso_elements1 and not is_iso_elements2:
+                print(f"in if 1 = iso1: {is_iso_elements1}, iso2: {is_iso_elements2}")
                 if is_iso_greg_compare_consistent(
-                    3, 2023, wk_value1, wy_value1,  # type: ignore
-                    2023, complete_elements2[1], complete_elements2[2]  # type: ignore
+                    3, iso_gre_year, wk_value1, wy_value1,  # type: ignore
+                    iso_gre_year, complete_elements2[1], complete_elements2[2]  # type: ignore
                 ):
+                    print("is_iso_greg_compare_consistent True")
                     temp_years = (
                         list(iso_available_years)
-                        if iso_available_years else [2023]
+                        if iso_available_years else [iso_gre_year]
                     )
                 else:
                     temp_years = (
                         list(iso_available_years) if iso_available_years
                         else list(range(START_YEAR, END_YEAR + 1))
                     )
+                    print("is_iso_greg_compare_consistent False")
+                print(f"temp_years: {temp_years}")
             elif not is_iso_elements1 and is_iso_elements2:
+                
                 if is_iso_greg_compare_consistent(
-                    3, 2023, wk_value2, wy_value2,  # type: ignore
-                    2023, complete_elements1[1], complete_elements1[2]  # type: ignore
+                    3, iso_gre_year, wk_value2, wy_value2,  # type: ignore
+                    iso_gre_year, complete_elements1[1], complete_elements1[2]  # type: ignore
                 ):
-                    temp_years = [2023]
+                    temp_years = [iso_gre_year]
                 else:
                     temp_years = (
                         list(iso_available_years) if iso_available_years
                         else list(range(START_YEAR, END_YEAR + 1))
                     )
+                
         set_years = [
             y for y in temp_years
             if (calendar.isleap(y) and compare_in_leap)
@@ -1191,6 +1207,7 @@ def compare_two_ordered_comparable_elements(
             set_elements2_ints = _set_complete_elements_values(
                 complete_elements2, [1, 1, 1, 0, 0, 0]
             )
+            
             return compare_two_datetimes_ints(
                 set_elements1_ints,
                 is_iso_elements1,

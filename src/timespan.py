@@ -89,7 +89,7 @@ class TimeSpan:
                 prsed_arguments = TimeSpan.parse_time_span_string(start)
 
             except TimeSpanStringError as e:
-                raise TimeSpanCreateArgumentError(f" {func_name} : {e}") from e
+                raise TimeSpanCreateArgumentError(f"{func_name}: {e}") from e
             else:
                 start = prsed_arguments["start"]
                 start_edge = prsed_arguments["start_edge"]
@@ -99,8 +99,9 @@ class TimeSpan:
 
         self._init_start = start
         self._init_end = end
-
-        if end is None:
+        if start is None:
+            raise TimeSpanCreateArgumentError("start cannot be None")
+        elif end is None:
             self._sequence_combination = (
                 CombinedSequnce.ISO if start.is_iso else CombinedSequnce.GRE
             )
@@ -112,7 +113,7 @@ class TimeSpan:
             if span_type == SpanType.BETWEEN:
                 if start_edge == EdgeType.END:
                     raise TimeSpanCreateArgumentError(
-                        "start_edge cannot be 'END' when span_type is 'BETWEEN'"
+                        "start_edge cannot be 'EdgeType.END' when span_type is 'Sapn.Type.BETWEEN'"
                     )
                 self._start = start.start_point
                 self._end = start.end_point
@@ -153,7 +154,7 @@ class TimeSpan:
             )
             self._is_leap = start.is_leap or end.is_leap
             self._type = SpanType.BETWEEN
-            self._start_edge = start_edge
+            self._start_edge = start_edge or EdgeType.START
             self._end_edge = end_edge or EdgeType.END
             self._scope = start.scope
             self._available_years = find_intersection(
@@ -191,6 +192,23 @@ class TimeSpan:
                 raise TimeSpanCreateArgumentError(
                     "No span exists between start and end"
                 )
+
+    def __str__(self) -> str:
+        return f"S({self.default_represenantion})"
+
+    def __repr__(self) -> str:
+        return f"TimeSpan('{self.default_represenantion}')"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TimeSpan):
+            return NotImplemented
+        return (
+            self.start == other.start
+            and self.end == other.end
+            and self.start_edge == other.start_edge
+            and self.end_edge == other.end_edge
+            and self.type == other.type
+        )
 
     @staticmethod
     def parse_time_span_string(span_str: str) -> dict:
@@ -288,16 +306,6 @@ class TimeSpan:
             "end_edge": end_edge,
             "span_type": span_type,
         }
-
-    def __str__(self) -> str:
-        return (
-            f"start = {self._start}, start_edge ={ self._start_edge},"
-            f" end = {self._end}, end_edge = {self._end_edge}, "
-            f"span_type = {self._type}"
-        )
-
-    def __repr__(self) -> str:
-        return f"TimeSpan({self.__str__()})"
 
     @property
     def start(self) -> TimePoint:
@@ -545,7 +553,7 @@ class TimeSpan:
         try:
             temp_dict: Dict[int, SpanContain] = {}
             start_contained = TimePoint.is_between_points(time_span.start, start, end)
-            end_contained = TimePoint.is_between_points(time_span.end, end, start)
+            end_contained = TimePoint.is_between_points(time_span.end, start, end)
             if isinstance(start_contained, int) and isinstance(end_contained, int):
                 return check_contained(start_contained, end_contained)
             elif isinstance(start_contained, Dict) and isinstance(end_contained, int):
@@ -576,18 +584,26 @@ class TimeSpan:
         contained_span: TimeSpan, container_span: TimeSpan
     ) -> Optional[SpanContain]:
         """
-        Determines if the `contained_span` is fully contained within the `container_span`.
+        Determines if the `contained_span` is fully contained
+                        within the `container_span`.
 
         Args:
-            contained_span (TimeSpan): The TimeSpan to check if it is contained within the container_span.
-            container_span (TimeSpan): The TimeSpan that potentially contains the contained_span.
+            contained_span (TimeSpan): The TimeSpan to check if it is contained within
+                                        the container_span.
+            container_span (TimeSpan): The TimeSpan that potentially contains the
+                                        contained_span.
 
         Returns:
-            Optional[SpanContain]: The result of the containment check. It can be one of the following:
-                - SpanContain.CONTAINED: If the `contained_span` is fully contained within the `container_span`.
-                - SpanContain.STARTS_BEFORE: If the `contained_span` starts before the `container_span` but ends within it.
-                - SpanContain.ENDS_AFTER: If the `contained_span` starts within the `container_span` but ends after it.
-                - SpanContain.NOT_CONTAINED: If the `contained_span` is not contained within the `container_span`.
+            Optional[SpanContain]: The result of the containment check. It can be one
+                                    of the following:
+                - SpanContain.CONTAINED: If the `contained_span` is fully contained
+                                            within the `container_span`.
+                - SpanContain.STARTS_BEFORE: If the `contained_span` starts before the
+                                            `container_span` but ends within it.
+                - SpanContain.ENDS_AFTER: If the `contained_span` starts within the
+                                            `container_span` but ends after it.
+                - SpanContain.NOT_CONTAINED: If the `contained_span` is not contained
+                                            within the `container_span`.
         """
 
         try:
@@ -613,21 +629,21 @@ class TimeSpan:
             TimeSpanStringError: If there is an error in converting the TimeSpan object to a string.
         """
 
-        def get_representation(edge, start=True):
+        def get_representation(start=True):
             """Helper to get the correct representation for start or end."""
-            return (
-                time_span.init_start.default_representation
-                if is_default_repr
-                else (
-                    time_span.init_start.alternative_representation
-                    if start
-                    else (
-                        time_span.init_end.default_representation
-                        if is_default_repr
-                        else time_span.init_end.alternative_representation
-                    )
+            if start:
+
+                return (
+                    time_span.init_start.default_representation
+                    if is_default_repr
+                    else time_span.init_start.alternative_representation
                 )
-            )
+            else:
+                return (
+                    time_span.init_end.default_representation
+                    if is_default_repr
+                    else time_span.init_end.alternative_representation
+                )
 
         def set_edge_marker(edge_type, init_str):
             """Helper to get the marker based on edge type and position."""
@@ -635,14 +651,14 @@ class TimeSpan:
 
         if time_span.init_end is None:
             if time_span.type == SpanType.BETWEEN:
-                return f"@{get_representation(time_span.init_start,True)}@"
+                return f"@{get_representation(start=True)}@"
             elif time_span.type == SpanType.AFTER:
-                return f"_{set_edge_marker(time_span.start_edge, get_representation(time_span.init_end))}"
+                return f"_{set_edge_marker(time_span.start_edge, get_representation(start=True))}"
             elif time_span.type == SpanType.BEFORE:
-                return f"{set_edge_marker(time_span.start_edge, get_representation(time_span.init_start))}_"
+                return f"{set_edge_marker(time_span.start_edge, get_representation(start=True))}_"
         else:
-            start_repr = get_representation(time_span.init_start)
-            end_repr = get_representation(time_span.init_end, start=False)
+            start_repr = get_representation(True)
+            end_repr = get_representation(start=False)
             start_with_marker = set_edge_marker(time_span.start_edge, start_repr)
             end_with_marker = set_edge_marker(time_span.end_edge, end_repr)
             return f"{start_with_marker}_{end_with_marker}"

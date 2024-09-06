@@ -219,7 +219,7 @@ class TimePoint:
         return get_value_by_unit_from_elements(unit, self._time_elements)[0]
 
     def __str__(self) -> str:
-        return self.default_representation
+        return f"P({self.default_representation})"
 
     def __repr__(self) -> str:
         return f"TimePoint('{self.default_representation}')"
@@ -289,7 +289,7 @@ class TimePoint:
             comp_result = compare_two_ordered_comparable_elements(
                 end_points.time_elements, start_points.time_elements
             )
-            print("compare: ", comp_result)
+
         except ValueError as e:
             raise TimePointNotComparableError(start, end) from e
         else:
@@ -383,12 +383,14 @@ class TimePoint:
         if point1.scope != point2.scope:
             raise TimePointNotComparableError(point1, point2)
         try:
+
             result = compare_two_ordered_comparable_elements(
                 point1.time_elements, point2.time_elements
             )
         except ValueError as e:
             raise TimePointNotComparableError(point1, point2) from e
         else:
+ 
             return result
 
     @staticmethod

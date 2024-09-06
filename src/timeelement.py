@@ -111,7 +111,7 @@ class TimeElement:
         return hash((self.element_unit, self.element_value))
 
     def __str__(self) -> str:
-        return f"{self._element_unit}={self._element_value}"
+        return f"E({self._element_unit}={self._element_value})"
 
     def __repr__(self) -> str:
         return f"TimeElement('{self._element_unit}', {self._element_value})"
