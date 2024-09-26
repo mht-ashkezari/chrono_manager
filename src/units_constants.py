@@ -15,8 +15,7 @@ END_SCOPE_VALUES_GRE: Tuple[int, ...] = (END_YEAR, 12, 31, 23, 59, 59)
 START_SCOPE_VALUES_ISO: Tuple[int, ...] = (START_YEAR, 1, 1, 0, 0, 0)
 END_SCOPE_VALUES_ISO: Tuple[int, ...] = (END_YEAR, 53, 7, 23, 59, 59)
 
-time_spans_types = ["between", "outside", "before", "after"]
-time_span_len_type = ["begin", "end"]
+
 weekdays_names = {
     i + 1: val
     for i, val in enumerate(
