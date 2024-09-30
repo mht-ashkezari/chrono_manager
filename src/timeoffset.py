@@ -25,6 +25,7 @@ class OffsetUnit(Enum):
     ME = "ME"
     SD = "SD"
 
+
 OFFSET_UNIT_TO_SECONDS = {
     OffsetUnit.YR: OFFSET_YEAR_LENGTH * 24 * 60 * 60,
     OffsetUnit.MH: OFFSET_MONTH_LENGTH * 24 * 60 * 60,
@@ -36,38 +37,14 @@ OFFSET_UNIT_TO_SECONDS = {
 }
 
 
-
-
-
-
-
-
-
-"""
-OffsetUnitScope: dict[OffsetUnit, List[OffsetUnit]] = {
-    OffsetUnit.SD: [OffsetUnit.ME],
-    OffsetUnit.ME: [OffsetUnit.HR],
-    OffsetUnit.HR: [OffsetUnit.DY, OffsetUnit.WY],
-
-    OffsetUnit.WK: [OffsetUnit.YR],
-    OffsetUnit.DY: [OffsetUnit.MH],
-    OffsetUnit.MH: [OffsetUnit.YR],
-}
-"""
-
-
 class TimeOffsetException(Exception):
-    def init(self, message: str) -> None:
-        super().init(message)
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class TimeOffsetArgumentError(TimeOffsetException):
-    def init(self, message: str) -> None:
-        super().init(message)
-
-
-
-
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class OffsetElement:
