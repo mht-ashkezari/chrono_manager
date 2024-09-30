@@ -21,12 +21,19 @@ class OffsetUnit(Enum):
     MH = "MH"
     WK = "WK"
     DY = "DY"    
-    # WY = "WY"
     HR = "HR"
     ME = "ME"
     SD = "SD"
 
-
+OFFSET_UNIT_TO_SECONDS = {
+    OffsetUnit.YR: OFFSET_YEAR_LENGTH * 24 * 60 * 60,
+    OffsetUnit.MH: OFFSET_MONTH_LENGTH * 24 * 60 * 60,
+    OffsetUnit.WK: 7 * 24 * 60 * 60,
+    OffsetUnit.DY: 24 * 60 * 60,
+    OffsetUnit.HR: 60 * 60,
+    OffsetUnit.ME: 60,
+    OffsetUnit.SD: 1
+}
 
 
 
@@ -59,6 +66,10 @@ class TimeOffsetArgumentError(TimeOffsetException):
         super().init(message)
 
 
+
+
+
+
 class OffsetElement:
 
     def __init__(
@@ -80,6 +91,52 @@ class OffsetElement:
 
     def __repr__(self) -> str:
         return f"OffsetElement({self.unit.value}{self.value})"
+    
+    def __hash__(self) -> int:
+        return hash((self.unit, self.value, self.is_shift))
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement):
+            return NotImplemented
+        return (
+            self.unit == other.unit
+            and self.value == other.value
+            and self.is_shift == other.is_shift
+        )
+    
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement):
+            return NotImplemented
+        return (
+            self.unit != other.unit
+            or self.value != other.value
+            or self.is_shift != other.is_shift
+        )
+    
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement) or (self.unit != other.unit and self.is_shift != other.is_shift):
+            return NotImplemented
+        else:
+            return self.unit.value < other.unit.value
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement) or (self.unit != other.unit and self.is_shift != other.is_shift):
+            return NotImplemented
+        else:
+            return self.unit.value <= other.unit.value
+    
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement) or (self.unit != other.unit and self.is_shift != other.is_shift):
+            return NotImplemented
+        else:
+            return self.unit.value > other.unit.value
+    
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, OffsetElement) or (self.unit != other.unit and self.is_shift != other.is_shift):
+            return NotImplemented
+        else:
+            return self.unit.value >= other.unit.value
+        
 
     @classmethod
     def from_string(cls, element_string: str) -> Tuple[OffsetUnit, int, bool]:
@@ -138,15 +195,7 @@ class OffsetElement:
 
 
 class TimeOffset:
-    OFFSET_UNIT_TO_SECONDS = {
-        OffsetUnit.YR: 365 * 24 * 60 * 60,
-        OffsetUnit.MH: 30 * 24 * 60 * 60,
-        OffsetUnit.WK: 7 * 24 * 60 * 60,
-        OffsetUnit.DY: 24 * 60 * 60,
-        OffsetUnit.HR: 60 * 60,
-        OffsetUnit.ME: 60,
-        OffsetUnit.SD: 1
-    }
+
 
     def __init__(
             self, scope: OffsetUnit,
@@ -160,11 +209,11 @@ class TimeOffset:
         ):
             self._elements = offset_elements
         else:
-            raise ValueError("Invalid input: must be a string or a list of OffsetElement instances.")
+            raise ValueError(
+                "Invalid input: must be a string or a list of OffsetElement instances."
+            )
         self._unify_elements()
         self._convert_to_seconds()
-        self._shifs = [element for element in self._elements if element.is_shift]
-        self._amounts = [element for element in self._elements if not element.is_shift]
 
     def _unify_elements(self):
         unified_elements = {}
@@ -182,8 +231,8 @@ class TimeOffset:
     def _convert_to_seconds(self):
         total_seconds = 0
         for element in self._elements:
-            if not element.is_shift:
-                unit_in_seconds = TimeOffset.OFFSET_UNIT_TO_SECONDS[element.unit]
+            if not element.is_shift or (element.is_shift and element.unit != OffsetUnit.YR and element.unit != OffsetUnit.MH):
+                unit_in_seconds = OFFSET_UNIT_TO_SECONDS[element.unit]
                 total_seconds += element.value * unit_in_seconds
         self._total_seconds = total_seconds
 
@@ -213,18 +262,19 @@ class TimeOffset:
         return self._elements
 
     @property
-    def shifts(self) -> List[OffsetElement]:
-        return self._shifs
-
-    #TODO: add setter for amounts and shifts
+    def month_shift(self) -> int:
+        for element in self._elements:
+            if element.unit == OffsetUnit.MH:
+                return element.value
+        return 0
+    @property
+    def year_shift(self) -> int:
+        for element in self._elements:
+            if element.unit == OffsetUnit.YR:
+                return element.value
+        return 0
 
     @property
     def total_seconds(self) -> int:
         return self._total_seconds
-    
-    @property
-    def amounts(self) -> List[OffsetElement]:
-        return self._amounts
-
-
 
