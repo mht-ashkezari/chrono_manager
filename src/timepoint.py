@@ -363,21 +363,31 @@ class TimePoint:
         point1: TimePoint, point2: TimePoint
     ) -> int | Dict[str, List[int]]:
         """
-        Compare two TimePoint objects and return the result.
+        Compares two TimePoint objects and returns the result.
 
-        Args:
-            point1 (TimePoint): The first TimePoint object to compare.
-            point2 (TimePoint): The second TimePoint object to compare.
+        :param point1: The first TimePoint object to compare.
+        :type point1: TimePoint
+        :param point2: The second TimePoint object to compare.
+        :type point2: TimePoint
 
-        Returns:
-            int | Dict[str, List[int]]: The result of the comparison. If the TimePoint
-                                        objects are comparable, an integer value is
-                                        returned. If they are not comparable, a
-                                        dictionary with error information is returned.
+        :return: The result of the comparison.
+        :rtype: int | Dict[str, List[int]]
 
-        Raises:
-            TimePointNotComparableError: If the TimePoint objects have different scopes
-                                        and are not comparable
+        - int:
+            - 1 if point1 is greater than point2,
+            - -1 if point1 is less than point2,
+            - 0 if point1 is equal to point2,
+            - -2 if comparison is not possible in some years.
+
+        - Dict[str, List[int]]: 
+            - If comparison is possible in some years (e.g., when the scope is year) and one 
+            of the elements has an ISO week with 53 weeks, returns a dictionary:
+                - "greater": years where point1 > point2,
+                - "less": years where point1 < point2,
+                - "equal": years where point1 = point2.
+
+        :raises TimePointNotComparableError: If the TimePoint objects have different scopes 
+                                            and are not comparable.
         """
 
         if point1.scope != point2.scope:
@@ -390,7 +400,6 @@ class TimePoint:
         except ValueError as e:
             raise TimePointNotComparableError(point1, point2) from e
         else:
- 
             return result
 
     @staticmethod
