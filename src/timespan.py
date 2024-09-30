@@ -210,6 +210,27 @@ class TimeSpan:
             and self.type == other.type
         )
 
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, TimeSpan):
+            return NotImplemented
+        return (
+            self.start != other.start
+            or self.end != other.end
+            or self.start_edge != other.start_edge
+            or self.end_edge != other.end_edge
+            or self.type != other.type
+        )
+    
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.start,
+                self.end,
+                self.start_edge,
+                self.end_edge,
+                self.type,
+            )
+        )
     @staticmethod
     def parse_time_span_string(span_str: str) -> dict:
         """
