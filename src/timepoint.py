@@ -252,6 +252,46 @@ class TimePoint:
                 return element.element_value
         else:
             return None
+        
+    # TODO: must be completed 
+    @staticmethod
+    def seconds_between_two_points(
+        start: TimePoint, end: TimePoint
+    ) -> Optional[int | Dict[int, int]]:
+        """
+        Calculate the number of seconds between two TimePoint objects.
+
+        Args:
+            start (TimePoint): The starting TimePoint object.
+            end (TimePoint): The ending TimePoint object.
+
+        Returns:
+            Optional[int | Dict[int, int]]: The number of seconds between the two
+                                            TimePoint objects.
+                - If the two TimePoint objects are not comparable, returns None.
+                - If the two TimePoint objects are comparable, returns the number of
+                    seconds between them.
+        """
+        try:
+            point_compare = TimePoint.compare_points(start, end)
+        except TimePointNotComparableError as e:
+            raise TimePointOccurrenceError(str(e)) from e
+        else:
+            if isinstance(point_compare, int):
+                if point_compare == 1:
+                    pass
+                elif point_compare == -1:
+                    pass
+                elif point_compare == 0:
+                    pass
+                else:
+                    raise TimePointOccurrenceError("Invalid time points")
+            if isinstance(point_compare, Dict):
+                greaters = point_compare["greater"]
+                lesses = point_compare["less"]
+                equals = point_compare["equal"]
+
+        return TimePoint._seconds_between_two_points(start, end)
 
     @staticmethod
     def is_between_points(
