@@ -221,6 +221,35 @@ class TimeElement:
         else:
             self._element_value = value
 
+    # TODO: must be implemented
+
+    @property
+    def seconds_to_start_of_scope(self) -> int:
+        """
+        Returns the number of seconds to reach the start of the next scope.
+
+        Returns:
+            int: The number of seconds to reach the start of the next scope.
+        """
+        return cast(
+            int,
+            self._units[self._element_unit]["seconds_to_start_of_scope"],
+        )
+    
+    # TODO: must be implemented
+    @property
+    def seconds_to_end_of_scope(self) -> int:
+        """
+        Returns the number of seconds to reach the end of the current scope.
+
+        Returns:
+            int: The number of seconds to reach the end of the current scope.
+        """
+        return cast(
+            int,
+            self._units[self._element_unit]["seconds_to_end_of_scope"],
+        )
+
     @classmethod
     def unit_values_to_end_scope(
         cls, unit_name: str, start_value: int, month: Optional[int] = None
