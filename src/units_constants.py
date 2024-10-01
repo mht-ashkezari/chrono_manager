@@ -2,6 +2,8 @@ from typing import Callable, Dict, List, Tuple, Union, cast
 from frozendict import frozendict
 import datetime
 
+from src.configs import YEARS_WITH_53_WEEKS
+
 START_YEAR = 1800
 END_YEAR = 2199
 
@@ -107,6 +109,8 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "under_join_units": [],
         "unit_as_seconds": 1,
         "values_to_end_scope": lambda start_value: list(range(start_value, 60)),
+        "seconds_to_end_scope": lambda value: 60 - value,
+        "seconds_to_start_scope": lambda value: value,
     },
     "ME": {
         "unit_name": "minute",
@@ -120,6 +124,8 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "under_join_units": ["SD"],
         "unit_as_seconds": 60,
         "values_to_end_scope": lambda start_value: list(range(start_value, 60)),
+        "seconds_to_end_scope": lambda value: 3600 - value,
+        "seconds_to_start_scope": lambda value: value * 60,
     },
     "HR": {
         "unit_name": "hour",
@@ -133,6 +139,8 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "under_join_units": ["ME"],
         "unit_as_seconds": 3600,
         "values_to_end_scope": lambda start_value: list(range(start_value, 24)),
+        "seconds_to_end_scope": lambda value: 86400 - value,
+        "seconds_to_start_scope": lambda value: value * 3600
     },
     "WY": {
         "unit_name": "weekday",
@@ -158,6 +166,8 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "under_join_units": ["HR"],
         "unit_as_seconds": 86400,
         "values_to_end_scope": lambda start_value: list(range(start_value, 8)),
+        "seconds_to_end_scope": lambda value: 604800 - value,
+        "seconds_to_start_scope": lambda value: value * 86400
     },
     "WK": {
         "unit_name": "week",
@@ -171,6 +181,7 @@ UNITS: Dict[str, TimeUnitInfo] = {
         "under_join_units": ["WY"],
         "unit_as_seconds": 604800,
         "values_to_end_scope": lambda start_value: list(range(start_value, 54)),
+        "seconds_to_end_scope": lambda value,year: 32054400 - value if year in YEARS_WITH_53_WEEKS else 31449600 - value,
     },
     "DY": {
         "unit_name": "day",
@@ -206,6 +217,14 @@ UNITS: Dict[str, TimeUnitInfo] = {
                 )
             )
         ),
+        "seconds_to_end_scope": lambda value, month,leap: (
+            86400 * (
+                31 - value
+                if month is None
+                else day_allow_vals[month]["max"] - value if month != "Feb" or leap else 28 - value
+            )
+        ),
+        "seconds_to_start_scope": lambda value: value * 86400,
     },
     "MH": {
         "unit_name": "month",
@@ -241,6 +260,8 @@ UNITS: Dict[str, TimeUnitInfo] = {
         ),
         # fmt: on
         "values_to_end_scope": lambda start_value: list(range(start_value, 13)),
+        "seconds_to_end_scope": lambda value, leap: months_total_seconds(True, value, leap),
+        "seconds_to_start_scope": lambda value, leap: months_total_seconds(False, value, leap),
     },
     "YR": {
         "unit_name": "year",
@@ -258,3 +279,28 @@ UNITS: Dict[str, TimeUnitInfo] = {
         ),
     },
 }
+
+
+def months_total_seconds(is_to_end: bool, month: int, leap: bool) -> int:
+    # Get the month keys from day_allow_vals (i.e., 'Jan', 'Feb', etc.)
+    month_keys = list(day_allow_vals.keys())
+
+    # Get the months in the scope
+    months = UNITS["MH"]["values_to_end_scope"](month) if is_to_end else list(range(1, month+1))
+
+    # Calculate total days
+    days = []
+    for m in months:
+        # Get the month name from month_keys using index m-1 (because month is 1-indexed)
+        month_name = month_keys[m-1]
+        
+        # Get the maximum days for the month, handle February for leap year
+        max_days = day_allow_vals[month_name]["max"]
+        if month_name == "Feb" and not leap:
+            max_days = 28
+        
+        days.append(max_days)
+    
+    # Return the total seconds by multiplying total days by 86400 seconds per day
+    return sum(days) * 86400
+
