@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Union
 from src.constants import SpanType, EdgeType
 from src.timespan import TimeSpan, TimeSpanStringError
 from src.timepoint import TimePoint, TimePointNotComparableError
-from enum import Enum
 import re
 
 
@@ -21,9 +20,11 @@ class ExtendedSpanImpossibleError(ExtendedSpanException):
     def __init__(self, message: str) -> None:
         super().__init__(message)
 
+
 class ExtendedSpanStringError(ExtendedSpanException):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
 
 class ExtenedTimeSpan:
     def __init__(
@@ -124,7 +125,10 @@ class ExtenedTimeSpan:
         ))
 
     @staticmethod
-    def to_string(ext_span: ExtenedTimeSpan,is_default_repr:bool = True) -> str:
+
+
+    @staticmethod
+    def to_string(ext_span: ExtenedTimeSpan,is_default_repr: bool = True) -> str:
         return (f"{ext_span.start_span.default_represenantion}"
                 f"{ext_span.end_span.default_represenantion[1:]}"
                 f"#{ext_span._subsequent_scopes}" if is_default_repr 
