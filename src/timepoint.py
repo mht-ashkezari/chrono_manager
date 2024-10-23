@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from .units_constants import YEARS_WITH_53_WEEKS
 
 from .configs import (
     START_YEAR,
-    END_YEAR,
-    YEARS_WITH_53_WEEKS,
     START_SCOPE_ELEMENTS_GRE,
     START_SCOPE_ELEMENTS_ISO,
     END_SCOPE_ELEMENTS_GRE,

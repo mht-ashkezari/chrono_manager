@@ -4,8 +4,8 @@ from typing import Optional, Tuple, List, Union, Dict
 from datetime import datetime, timedelta
 import calendar
 from .timeelement import TimeElement
-from .units_constants import START_YEAR, END_YEAR, UNITS_SEQUENCE
-from .configs import YEARS_WITH_53_WEEKS, CombinedSequnce
+from .units_constants import START_YEAR, END_YEAR, UNITS_SEQUENCE, YEARS_WITH_53_WEEKS
+from .configs import CombinedSequnce
 
 
 def days_to_year_start_iso(

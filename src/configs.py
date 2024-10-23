@@ -1,7 +1,7 @@
 from typing import List, Tuple, Union
 from .timeelement import TimeElement
 from .units_constants import START_YEAR, END_YEAR
-from datetime import date
+
 from enum import Enum
 
 
@@ -48,20 +48,6 @@ START_SCOPE_ELEMENTS_ISO: Tuple[TimeElement, ...] = (
 )
 
 
-def years_with_53_weeks(start_year: int, end_year: int) -> frozenset[int]:
-    years = set()
-    for year in range(start_year, end_year + 1):
-        d = date(year, 12, 28)
-        if d.isocalendar()[1] == 53:
-            years.add(year)
-    return frozenset(years)
-
-
-# Years with 53 weeks in the ISO calendar
-YEARS_WITH_53_WEEKS: frozenset[int] = years_with_53_weeks(START_YEAR, END_YEAR)
-
-
-#
 class PointType(Enum):
     START = "PointType.START"
     END = "PointType.END"

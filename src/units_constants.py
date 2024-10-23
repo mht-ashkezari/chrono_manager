@@ -1,8 +1,7 @@
 from typing import Callable, Dict, List, Tuple, Union, cast
 from frozendict import frozendict
 import datetime
-
-from src.configs import YEARS_WITH_53_WEEKS
+from datetime import date
 
 START_YEAR = 1800
 END_YEAR = 2199
@@ -32,6 +31,21 @@ weekdays_names = {
         ]
     )
 }
+
+
+def years_with_53_weeks(start_year: int, end_year: int) -> frozenset[int]:
+    years = set()
+    for year in range(start_year, end_year + 1):
+        d = date(year, 12, 28)
+        if d.isocalendar()[1] == 53:
+            years.add(year)
+    return frozenset(years)
+
+
+# Years with 53 weeks in the ISO calendar
+YEARS_WITH_53_WEEKS: frozenset[int] = years_with_53_weeks(START_YEAR, END_YEAR)
+
+
 
 START_DATE = datetime.datetime(START_YEAR, 1, 1, 0, 0, 0)
 END_DATE = datetime.datetime(END_YEAR + 1, 1, 1, 0, 0, 0)
